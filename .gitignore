@@ -141,7 +141,10 @@ dmypy.json
 cython_debug/
 
 # LLM models
+data/
+models/
 mobilebert-router-model/
 phi-router-model/
 mobilbert-query-router-final/
+mobilebert-query-router-final/
 mobilbert_query_router_trained/
