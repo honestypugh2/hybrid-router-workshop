@@ -11,6 +11,11 @@ This workshop guides you through building a **hybrid AI chatbot** that combines 
 - **Intelligent routing** that automatically selects the best model for each query
 - **Seamless context sharing** across model transitions
 
+## 🖼️ Frontend Preview
+
+![Chat Interface](images/advanced_hybrid_example1.png)
+*Interactive Streamlit chat interface with model routing transparency*
+
 ## 🏗️ Architecture
 
 ```
@@ -188,6 +193,14 @@ By completing this workshop, you will have built a system that demonstrates:
 ✅ **Performance Optimization**: Measurable speed and efficiency gains  
 ✅ **Stakeholder-Ready Demo**: Interactive interface for business validation  
 
+### 📱 User Interface Examples
+
+![Local Response Example](images/advanced_hybrid_example1.png)
+*Fast local model response with performance indicators*
+
+![Cloud Response Example](images/advanced_hybrid_example2.png)
+*Complex cloud model response with routing explanation*
+
 ## 📊 Expected Outcomes
 
 ### Performance Metrics
@@ -203,6 +216,8 @@ By completing this workshop, you will have built a system that demonstrates:
 - **Scalable Design**: Modular components for easy enhancement
 - **Comprehensive Monitoring**: Full observability stack
 - **Business Value**: Clear ROI demonstration through metrics
+
+*Complete hybrid routing system architecture diagram (COMING SOON)*
 
 ## 🛟 Troubleshooting
 
