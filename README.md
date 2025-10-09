@@ -116,7 +116,7 @@ This workshop uses a Windows machine for on-device.
 - Test cloud model capabilities
 - Compare performance with local models
 
-#### **Lab 3 (Alternative): Azure AI Foundry Agents** (`lab3_azure_ai_foundry_agents.ipynb`)
+#### **Lab 3 (Alternative): Azure AI Foundry Agents** (`lab3_azure_ai_foundry_agents_testing.ipynb`)
 
 - Work with Azure AI Foundry agent framework
 - Implement agent-based conversation patterns
