@@ -128,17 +128,17 @@ This workshop uses a Windows machine for on-device.
 - Build routing decision engine
 - Test routing accuracy with various query types
 
-#### **Lab 4 (Advanced): BERT Model Routing** (`lab4_bert_model_routing.ipynb`)
-
-- Implement BERT-based query classification
-- Train custom routing models for query analysis
-- Compare machine learning vs rule-based routing
-
 #### **Lab 4 (Extended): BERT Query Router** (`lab4_bert_query_router.ipynb`)
 
-- Deep dive into BERT query classification
+- Deep dive into BERT-based query classification
 - Fine-tune models for specific routing scenarios
 - Evaluate routing accuracy and performance
+
+#### **Lab 4 (SLM): Phi Small Language Model Routing** (`lab4_phi_slm_routing.ipynb`)
+
+- Implement routing using Phi small language models
+- Fine-tune Phi models for routing decisions
+- Compare SLM vs traditional ML approaches
 
 #### **Lab 4 (Integration): API Management Router** (`lab4_apim_model_router.ipynb`)
 
@@ -151,12 +151,6 @@ This workshop uses a Windows machine for on-device.
 - Route between different Azure Foundry agents
 - Implement multi-agent coordination
 - Build agent-specific routing logic
-
-#### **Lab 4 (SLM): Phi Small Language Model Routing** (`lab4_phi_slm_routing.ipynb`)
-
-- Implement routing using Phi small language models
-- Fine-tune Phi models for routing decisions
-- Compare SLM vs traditional ML approaches
 
 #### **Lab 5: Hybrid Orchestration** (`lab5_hybrid_orchestration.ipynb`)
 

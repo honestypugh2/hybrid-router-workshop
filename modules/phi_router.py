@@ -32,6 +32,10 @@ from transformers import (
 )
 from peft import PeftModel
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,11 +44,11 @@ logger = logging.getLogger(__name__)
 class PhiRouterConfig:
     """Configuration class for Phi-based query router."""
     model_path: str
-    max_length: int = 512
-    confidence_threshold: float = 0.7
+    max_length: int = os.getenv["PHI_MAX_SEQUENCE_LENGTH"]
+    confidence_threshold: float = os.getenv["PHI_CONFIDENCE_THRESHOLD"]
     device: Optional[str] = None
-    batch_size: int = 1
-    temperature: float = 0.1
+    batch_size: int = os.getenv["PHI_BATCH_SIZE"]
+    temperature: float = os.getenv["PHI_TEMPERATURE"]
     do_sample: bool = False
     return_full_text: bool = False
     
@@ -162,7 +166,7 @@ class PhiQueryRouter:
             # Generate prediction
             outputs = self.pipeline(
                 formatted_prompt,
-                max_new_tokens=10,
+                max_new_tokens=os.getenv["PHI_MAX_NEW_TOKENS"],
                 temperature=self.config.temperature,
                 do_sample=self.config.do_sample,
                 return_full_text=self.config.return_full_text,

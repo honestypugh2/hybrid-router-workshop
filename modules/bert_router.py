@@ -16,13 +16,17 @@ from datetime import datetime
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 @dataclass
 class BertRouterConfig:
     """Configuration for the BERT-based router."""
-    model_path: str = "../notebooks/mobilbert_query_router_trained"
-    max_length: int = 128
-    confidence_threshold: float = 0.7
+    model_path: str = os.getenv["BERT_MODEL_PATH"]
+    max_length: int = os.getenv["BERT_MAX_SEQUENCE_LENGTH"]
+    confidence_threshold: float = os.getenv["BERT_CONFIDENCE_THRESHOLD"]
     device: Optional[str] = None
 
 
@@ -129,7 +133,7 @@ class BertQueryRouter:
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
             
             # Get predictions
-            with torch.no_grad():
+            with torch.inference_mode():
                 outputs = self.model(**inputs)
                 predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
                 predicted_class_id = predictions.argmax().item()
@@ -414,7 +418,7 @@ if __name__ == "__main__":
     print("=" * 30)
     
     # Initialize router
-    config = BertRouterConfig(model_path="../notebooks/mobilbert_query_router_trained")
+    config = BertRouterConfig(model_path=os.getenv["BERT_MODEL_PATH"])
     router = BertQueryRouter(config)
     
     # Test queries
