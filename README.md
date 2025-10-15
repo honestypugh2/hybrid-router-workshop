@@ -140,17 +140,17 @@ This workshop uses a Windows machine for on-device.
 - Fine-tune Phi models for routing decisions
 - Compare SLM vs traditional ML approaches
 
-#### **Lab 4 (Integration): API Management Router** (`lab4_apim_model_router.ipynb`)
-
-- Integrate with Azure API Management
-- Implement enterprise-grade routing patterns
-- Add rate limiting and authentication
-
 #### **Lab 4 (Alternative): Foundry Agent Routing** (`lab4_foundry_agent_routing.ipynb`)
 
 - Route between different Azure Foundry agents
 - Implement multi-agent coordination
 - Build agent-specific routing logic
+
+#### **Lab 4 (Integration): API Management Router** (`lab4_apim_model_router.ipynb`)
+
+- Integrate with Azure API Management
+- Implement enterprise-grade routing patterns
+- Add rate limiting and authentication
 
 #### **Lab 5: Hybrid Orchestration** (`lab5_hybrid_orchestration.ipynb`)
 
