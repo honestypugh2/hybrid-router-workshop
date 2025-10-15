@@ -73,9 +73,9 @@ class HybridRouterConfig:
     azure_api_version: str = "2024-12-01-preview"
     
     # ML router configuration
-    bert_model_path: Optional[str] = os.getenv["BERT_MODEL_FULLPATH"]
-    phi_model_path: Optional[str] = os.getenv["PHI_MODEL_FULLPATH"]
-    ml_confidence_threshold: float = os.getenv["ML_CONFIDENCE_THRESHOLD"]
+    bert_model_path: Optional[str] = os.environ["BERT_MODEL_FULLPATH"]
+    phi_model_path: Optional[str] = os.environ["PHI_MODEL_FULLPATH"]
+    ml_confidence_threshold: float = float(os.environ["ML_CONFIDENCE_THRESHOLD"])
     
     # Routing thresholds
     complexity_threshold_apim: int = 5

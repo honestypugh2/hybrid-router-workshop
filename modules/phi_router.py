@@ -44,11 +44,11 @@ logger = logging.getLogger(__name__)
 class PhiRouterConfig:
     """Configuration class for Phi-based query router."""
     model_path: str
-    max_length: int = os.getenv["PHI_MAX_SEQUENCE_LENGTH"]
-    confidence_threshold: float = os.getenv["PHI_CONFIDENCE_THRESHOLD"]
+    max_length: int = int(os.environ["PHI_MAX_SEQUENCE_LENGTH"])
+    confidence_threshold: float = float(os.environ["PHI_CONFIDENCE_THRESHOLD"])
     device: Optional[str] = None
-    batch_size: int = os.getenv["PHI_BATCH_SIZE"]
-    temperature: float = os.getenv["PHI_TEMPERATURE"]
+    batch_size: int = int(os.environ["PHI_BATCH_SIZE"])
+    temperature: float = float(os.environ["PHI_TEMPERATURE"])
     do_sample: bool = False
     return_full_text: bool = False
     
@@ -166,7 +166,7 @@ class PhiQueryRouter:
             # Generate prediction
             outputs = self.pipeline(
                 formatted_prompt,
-                max_new_tokens=os.getenv["PHI_MAX_NEW_TOKENS"],
+                max_new_tokens=int(os.environ["PHI_MAX_NEW_TOKENS"]),
                 temperature=self.config.temperature,
                 do_sample=self.config.do_sample,
                 return_full_text=self.config.return_full_text,

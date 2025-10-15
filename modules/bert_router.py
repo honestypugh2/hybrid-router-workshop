@@ -24,9 +24,9 @@ load_dotenv()
 @dataclass
 class BertRouterConfig:
     """Configuration for the BERT-based router."""
-    model_path: str = os.getenv["BERT_MODEL_PATH"]
-    max_length: int = os.getenv["BERT_MAX_SEQUENCE_LENGTH"]
-    confidence_threshold: float = os.getenv["BERT_CONFIDENCE_THRESHOLD"]
+    model_path: str = os.environ["BERT_MODEL_PATH"]
+    max_length: int = int(os.environ["BERT_MAX_SEQUENCE_LENGTH"])
+    confidence_threshold: float = float(os.environ["BERT_CONFIDENCE_THRESHOLD"])
     device: Optional[str] = None
 
 
@@ -418,7 +418,7 @@ if __name__ == "__main__":
     print("=" * 30)
     
     # Initialize router
-    config = BertRouterConfig(model_path=os.getenv["BERT_MODEL_PATH"])
+    config = BertRouterConfig(model_path=os.environ["BERT_MODEL_PATH"])
     router = BertQueryRouter(config)
     
     # Test queries
