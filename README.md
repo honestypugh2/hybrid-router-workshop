@@ -13,7 +13,7 @@ This workshop guides you through building a **hybrid AI chatbot** that combines 
 
 ## 🖼️ Frontend Preview
 
-![Chat Interface](images/advanced_hybrid_example1.png)
+![Chat Interface](images/hybrid_routermultiturn_hello.png)
 *Interactive Streamlit chat interface with model routing transparency*
 
 ## 🏗️ Architecture
@@ -189,10 +189,10 @@ By completing this workshop, you will have built a system that demonstrates:
 
 ### 📱 User Interface Examples
 
-![Local Response Example](images/advanced_hybrid_example1.png)
+![Local Response Example](images/hybrid_routermultiturn_hello_routingdetails.png)
 *Fast local model response with performance indicators*
 
-![Cloud Response Example](images/advanced_hybrid_example2.png)
+![Cloud Response Example](images/hybrid_routermultiturn2.png)
 *Complex cloud model response with routing explanation*
 
 ## 📊 Expected Outcomes
