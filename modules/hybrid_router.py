@@ -685,7 +685,7 @@ def create_hybrid_router_from_env() -> HybridFoundryAPIMRouter:
         apim_endpoint=os.environ.get("APIM_ENDPOINT"),
         apim_key=os.environ.get("APIM_API_KEY"),
         apim_deployment_id=os.environ.get("AZURE_APIM_DEPLOYMENT_ID"),
-        foundry_endpoint=os.environ.get("AZURE_AI_FOUNDRY_ENDPOINT"),
+        foundry_endpoint=os.environ.get("AZURE_AI_FOUNDRY_PROJECT_ENDPOINT"),
         azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
         azure_key=os.environ.get("AZURE_OPENAI_KEY"),
         azure_deployment=os.environ.get("AZURE_DEPLOYMENT_NAME"),
