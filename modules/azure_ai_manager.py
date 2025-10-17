@@ -143,7 +143,19 @@ class AzureAIManager:
         if not self.use_foundry_agents and not self.use_direct_openai:
             raise ValueError("No Azure AI services available. Check configuration.")
         
-        logger.info(f"Azure AI Manager initialized: Foundry={self.use_foundry_agents}, Direct={self.use_direct_openai}")
+        # Log available services
+        services = []
+        if self.use_foundry_agents:
+            services.append("Foundry Agents")
+        if self.use_direct_openai:
+            services.append("Direct Azure OpenAI")
+        
+        logger.info(f"Azure AI Manager initialized with: {', '.join(services)}")
+        
+        if not self.use_foundry_agents:
+            logger.info("💡 Azure AI Foundry not available - using Azure OpenAI direct access only")
+        if not self.use_direct_openai:
+            logger.warning("⚠️ Azure OpenAI direct access not configured - Foundry only mode")
     
     def _create_config_from_env(self) -> AzureAIConfig:
         """Create configuration from environment variables."""
@@ -171,32 +183,54 @@ class AzureAIManager:
     def _init_foundry_client(self):
         """Initialize Azure AI Foundry client and agent."""
         if not FOUNDRY_AVAILABLE or not self.config.foundry_endpoint:
+            logger.info("⚠️ Azure AI Foundry not available or endpoint not configured")
             return
             
         try:
+            logger.info(f"🔄 Attempting to initialize Azure AI Foundry at: {self.config.foundry_endpoint}")
             credential = DefaultAzureCredential()
             self.project_client = AIProjectClient(
                 endpoint=self.config.foundry_endpoint,
                 credential=credential
             )
             
+            # Test connection by trying to list agents
+            try:
+                agents = list(self.project_client.agents.list_agents())
+                logger.info(f"✅ Azure AI Foundry client connected. Found {len(agents)} existing agents.")
+            except Exception as test_e:
+                if "404" in str(test_e) or "Resource not found" in str(test_e):
+                    logger.info("ℹ️ Azure AI Foundry resource not found (404). This is expected if Foundry hasn't been deployed.")
+                    logger.info("🔄 System will use Azure OpenAI fallback instead.")
+                    self.project_client = None  # Clear the client since it's not working
+                    return  # Exit early since foundry isn't available
+                else:
+                    logger.warning(f"⚠️ Azure AI Foundry client created but connection test failed: {test_e}")
+                    # Continue anyway - the client might still work for other operations
+            
             # Create agent if Azure deployment is available
             if self.config.azure_deployment:
-                self.foundry_agent = self.project_client.agents.create_agent(
-                    model=self.config.azure_deployment,
-                    name=self.config.agent_name,
-                    instructions=self.config.agent_instructions,
-                    description="Managed agent for Azure AI operations"
-                )
-                
-                # Create conversation thread
-                self.agent_thread = self.project_client.agents.threads.create()
-                logger.info("✅ Azure AI Foundry agent and thread created")
+                try:
+                    self.foundry_agent = self.project_client.agents.create_agent(
+                        model=self.config.azure_deployment,
+                        name=self.config.agent_name,
+                        instructions=self.config.agent_instructions,
+                        description="Managed agent for Azure AI operations"
+                    )
+                    
+                    # Create conversation thread
+                    self.agent_thread = self.project_client.agents.threads.create()
+                    logger.info("✅ Azure AI Foundry agent and thread created")
+                except Exception as agent_e:
+                    logger.warning(f"⚠️ Could not create Foundry agent: {agent_e}")
+                    logger.info("🔄 Continuing without dedicated agent - will use direct API calls")
             
             logger.info("✅ Azure AI Foundry client initialized")
             
         except Exception as e:
-            logger.error(f"❌ Azure AI Foundry initialization failed: {e}")
+            logger.warning(f"⚠️ Azure AI Foundry initialization failed: {e}")
+            logger.info("🔄 Continuing without Azure AI Foundry - falling back to direct Azure OpenAI")
+            # Don't raise the exception - allow the system to continue without Foundry
     
     def query(self, prompt: str, method: str = "auto", **kwargs) -> Tuple[str, float, bool]:
         """

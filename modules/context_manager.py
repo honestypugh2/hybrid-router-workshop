@@ -24,6 +24,11 @@ class ModelSource(Enum):
     """Model sources for responses"""
     LOCAL = "local"
     CLOUD = "cloud"
+    HYBRID = "hybrid"
+    BERT = "bert"
+    PHI = "phi"
+    APIM = "apim"
+    FOUNDRY = "foundry"
     ERROR = "error"
     SYSTEM = "system"
 
@@ -166,6 +171,30 @@ class ConversationManager:
         
         self.conversation_history.append(message)
         return message
+
+    def add_message(self, session_id: str, message: Dict[str, str]) -> None:
+        """
+        Add a message to the conversation history in OpenAI format.
+        
+        Args:
+            session_id: Session identifier (currently unused but kept for API compatibility)
+            message: Message dictionary with 'role' and 'content' keys
+        """
+        role = message.get('role', 'user')
+        content = message.get('content', '')
+        
+        if role == 'user':
+            self.add_user_message(content, metadata={'session_id': session_id})
+        elif role == 'assistant':
+            # Default to hybrid source since we don't have detailed source info
+            self.add_assistant_message(
+                content=content, 
+                source=ModelSource.HYBRID,
+                response_time=0.0,  # Default response time
+                metadata={'session_id': session_id}
+            )
+        elif role == 'system':
+            self.add_system_message(content, metadata={'session_id': session_id})
 
     def get_messages_for_model(self, target_model: str = 'both', 
                               include_system: bool = True) -> List[Dict[str, str]]:

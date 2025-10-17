@@ -22,9 +22,13 @@ This workshop guides you through building a **hybrid AI chatbot** that combines 
 User Query → Router Logic → [Local Model] or [Cloud Model] → Unified Response
                 ↓                ↓              ↓
             Analytics     Fast Response   Smart Analysis
+
+Where:
+• Local Model = Azure Foundry Local
+• Cloud Model = Azure AI Foundry Agents | Azure OpenAI Direct | APIM
 ```
 
-The system maintains conversation context across both local and cloud models, providing transparency about where each response was processed while ensuring a seamless user experience.
+The system uses a **central Router Logic** that analyzes each query and intelligently routes to either the Local Model (Azure Foundry Local) for fast responses, or Cloud Model options (Azure AI Foundry Agents, Azure OpenAI Direct, or APIM) for smart analysis. Each path generates appropriate analytics while maintaining unified response handling and context continuity.
 
 ## 🚀 Key Features
 
@@ -164,6 +168,12 @@ This workshop uses a Windows machine for on-device.
 - Implement performance metrics collection
 - Create analytics dashboard for insights
 
+#### **Lab 6 Alternative: Telemetry with HybridFoundryAPIMRouter** (`lab6_alt_telemetry.ipynb`)
+
+- Implement comprehensive telemetry collection
+- Track performance across three routing tiers
+- Monitor ML-powered routing decisions
+
 #### **Lab 7: Frontend Chat Interface** (`lab7_frontend_chat_interface.ipynb`)
 
 - Build Streamlit-based chat UI
@@ -195,6 +205,42 @@ By completing this workshop, you will have built a system that demonstrates:
 ![Cloud Response Example](images/hybrid_routermultiturn2.png)
 *Complex cloud model response with routing explanation*
 
+## 🏗️ Architecture Diagrams
+
+Visual representations of the hybrid routing system architecture are available:
+
+### Azure Architecture Diagram
+
+Generate comprehensive Azure architecture diagrams using the Python diagrams library:
+
+```bash
+# Generate all architecture diagrams
+python setup_and_generate_diagrams.py
+
+# Or generate individual diagrams
+python azure_simple.py              # Main Azure architecture (local-first)
+python dataflow_local_first.py      # Local-first data flow
+```
+
+**Generated files**:
+
+- `hybrid_llm_router_architecture.png` - Main architecture with Router Logic design
+- `hybrid_router_architecture_dataflow.png` - Data flow showing routing decisions
+
+**Architecture highlights (Router Logic Design)**:
+
+- **Router Logic**: Central decision engine with BERT, Phi SLM, and Hybrid routing
+- **Local Model**: Azure Foundry Local for fast responses with local analytics
+- **Cloud Model Options**:
+  - Azure AI Foundry Agents (agent-based processing)
+  - Azure OpenAI Direct (direct API access)
+  - Azure APIM (API Management with backend routing)
+- **Supporting Services**: Cosmos DB, Blob Storage, Key Vault, Log Analytics
+- **Unified Response**: Single response path regardless of processing location
+- **Context Continuity**: Maintained across all processing paths
+
+📋 See `DIAGRAMS_README.md` for detailed setup instructions and troubleshooting.
+
 ## 📊 Expected Outcomes
 
 ### Performance Metrics
@@ -211,7 +257,7 @@ By completing this workshop, you will have built a system that demonstrates:
 - **Comprehensive Monitoring**: Full observability stack
 - **Business Value**: Clear ROI demonstration through metrics
 
-*Complete hybrid routing system architecture diagram (COMING SOON)*
+#### *Complete Hybrid Routing System Architecture Diagram (COMING SOON)*
 
 ## 🛟 Troubleshooting
 
