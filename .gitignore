@@ -151,3 +151,6 @@ mobilbert_query_router_trained/
 
 # Diagrams
 diagrams/
+
+# node_modules/
+node_modules/
