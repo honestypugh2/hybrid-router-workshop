@@ -148,3 +148,6 @@ phi-router-model/
 mobilbert-query-router-final/
 mobilebert-query-router-final/
 mobilbert_query_router_trained/
+
+# Diagrams
+diagrams/
