@@ -1,0 +1,35 @@
+# Core Dependencies
+openai>=1.12.0
+azure-identity>=1.15.0
+azure-ai-inference>=1.0.0b1
+python-dotenv>=1.0.0
+
+# FastAPI Backend
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Telemetry and Monitoring
+azure-monitor-opentelemetry>=1.2.0
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+
+# Frontend
+streamlit>=1.28.0
+plotly>=5.17.0
+
+# Utilities
+requests>=2.31.0
+jsonlines>=3.1.0
+tqdm>=4.66.0
+
+# Development and Testing
+jupyter>=1.0.0
+ipykernel>=6.25.0
+pytest>=7.4.0
+black>=23.7.0
+flake8>=6.0.0
