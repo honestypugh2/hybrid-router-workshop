@@ -5,13 +5,37 @@ This module provides a comprehensive three-tier hybrid routing system that intel
 routes queries between Local models (Foundry Local), Azure API Management (APIM) Model Router,
 and Azure AI Foundry Agents based on query complexity and enterprise requirements.
 
+NEW: Now includes ConversationContextManager integration for:
+- Session-based conversation management
+- Multi-turn context preservation across routing decisions
+- Enhanced metadata and analytics
+- Conversation history export/import capabilities
+
 Classes:
     HybridRouterConfig: Configuration for the hybrid router system
-    HybridFoundryAPIMRouter: Main router class with ML-powered analysis
+    HybridFoundryAPIMRouter: Main router class with ML-powered analysis and context management
     
 Functions:
     analyze_query_for_hybrid_routing: ML-enhanced query analysis
     route_hybrid_query: Intelligent routing decision logic
+    route_with_context: Enhanced routing with conversation context
+    create_hybrid_router_from_env: Convenience function to create router from environment variables
+
+Usage Example:
+    from modules.hybrid_router import create_hybrid_router_from_env
+    
+    # Create router with conversation context
+    router = create_hybrid_router_from_env(session_id="my_session")
+    
+    # Route query with context
+    result = router.route_with_context("Hello, how are you?", use_context=True)
+    print(result['response'])
+    
+    # Get conversation history
+    history = router.get_conversation_history(count=3)
+    
+    # Clear context when needed
+    router.clear_conversation_context()
 """
 
 import os
@@ -26,6 +50,9 @@ warnings.filterwarnings('ignore')
 
 # OpenAI clients
 from openai import OpenAI, AzureOpenAI
+
+# Import ConversationContextManager
+from .context_manager import ConversationContextManager
 
 # Optional ML router imports
 try:
@@ -91,10 +118,16 @@ class HybridFoundryAPIMRouter:
     enterprise-grade APIM integration, and robust fallback mechanisms.
     """
     
-    def __init__(self, config: HybridRouterConfig):
+    def __init__(self, config: HybridRouterConfig, session_id: str = None):
         """Initialize the hybrid router with configuration."""
         self.config = config
         self.routing_history = []
+        
+        # Initialize conversation context manager
+        self.context_manager = ConversationContextManager(
+            session_id=session_id, 
+            max_history=config.max_context_length if hasattr(config, 'max_context_length') else 15
+        )
         
         # Initialize ML routers
         self.bert_router = None
@@ -511,6 +544,169 @@ class HybridFoundryAPIMRouter:
         except Exception as e:
             return f"Azure OpenAI error: {str(e)}", 0, False
     
+    def route_with_context(self, query: str, use_context: bool = True, show_reasoning: bool = False) -> Dict[str, Any]:
+        """
+        Process query through hybrid routing system with conversation context.
+        
+        Args:
+            query: User query to route
+            use_context: Whether to include conversation context
+            show_reasoning: Whether to include routing reasoning in response
+            
+        Returns:
+            Dictionary with response, metadata, routing info, and context details
+        """
+        start_time = time.time()
+        
+        # Get conversation context if requested
+        context_messages = []
+        if use_context:
+            context_messages = self.context_manager.get_messages_for_model('both', include_system=False)
+        
+        # Prepare query with context for model input
+        query_with_context = query
+        if context_messages:
+            # Format recent context for the model
+            context_str = self.context_manager.get_conversation_context(context_messages)
+            if context_str != "No previous context available.":
+                query_with_context = f"{context_str}\n\nCurrent question: {query}"
+        
+        # Determine optimal routing target
+        target, reason, priority = self.route_hybrid_query(query)
+        
+        # Get routing analysis for metadata
+        analysis = self.analyze_query_for_hybrid_routing(query)
+        
+        response = ""
+        response_time = 0
+        success = False
+        actual_source = target
+        
+        # Execute primary routing decision with fallback chains
+        if target == 'local':
+            response, response_time, success = self.query_local_model(query_with_context)
+            if not success:
+                if self.apim_client:
+                    response, response_time, success = self.query_apim_router(query_with_context)
+                    actual_source = 'apim-fallback'
+                elif self.foundry_agent:
+                    response, response_time, success = self.query_foundry_agent(query_with_context)
+                    actual_source = 'foundry-fallback'
+                elif self.azure_client:
+                    response, response_time, success = self.query_azure_direct(query_with_context)
+                    actual_source = 'azure-fallback'
+        
+        elif target == 'apim':
+            response, response_time, success = self.query_apim_router(query_with_context)
+            if not success:
+                if self.foundry_agent:
+                    response, response_time, success = self.query_foundry_agent(query_with_context)
+                    actual_source = 'foundry-fallback'
+                elif self.azure_client:
+                    response, response_time, success = self.query_azure_direct(query_with_context)
+                    actual_source = 'azure-fallback'
+                elif self.local_client:
+                    response, response_time, success = self.query_local_model(query_with_context)
+                    actual_source = 'local-fallback'
+        
+        elif target == 'foundry':
+            response, response_time, success = self.query_foundry_agent(query_with_context)
+            if not success:
+                if self.apim_client:
+                    response, response_time, success = self.query_apim_router(query_with_context)
+                    actual_source = 'apim-fallback'
+                elif self.azure_client:
+                    response, response_time, success = self.query_azure_direct(query_with_context)
+                    actual_source = 'azure-fallback'
+                elif self.local_client:
+                    response, response_time, success = self.query_local_model(query_with_context)
+                    actual_source = 'local-fallback'
+        
+        total_time = time.time() - start_time
+        
+        # Clean response content (remove source tags for storage)
+        clean_response = response
+        source_tags = ['[LOCAL]', '[APIM]', '[FOUNDRY-AGENT]', '[APIM*]', '[FOUNDRY*]', '[AZURE*]', '[LOCAL*]', '[ERROR]']
+        for tag in source_tags:
+            if clean_response.startswith(tag):
+                clean_response = clean_response[len(tag):].strip()
+                break
+        
+        # Create metadata for the exchange
+        metadata = {
+            'strategy': target,
+            'context_used': use_context and len(context_messages) > 0,
+            'routing_info': {
+                'target': target,
+                'actual_source': actual_source,
+                'reason': reason,
+                'priority': priority,
+                'strategy': target,
+                'analysis': analysis,
+                'confidence': analysis.get('ml_confidence', 0.0),
+                'router_used': analysis.get('router_used', 'pattern_based'),
+                'source': actual_source
+            },
+            'response_time': total_time,
+            'success': success,
+            'context_length': len(context_messages),
+            'query_length': len(query),
+            'routing_decision': reason,
+            'router_used': analysis.get('router_used', 'pattern_based')
+        }
+        
+        if not success:
+            metadata['error'] = True
+            metadata['error_message'] = f"Routing failed: {response}"
+        
+        # Add exchange to conversation context
+        self.context_manager.add_exchange(
+            user_message=query,
+            ai_response=clean_response,
+            source=actual_source,
+            response_time=total_time,
+            metadata=metadata
+        )
+        
+        # Record for statistics
+        self.routing_history.append({
+            'query': query,
+            'source': actual_source,
+            'response_time': response_time,
+            'success': success,
+            'timestamp': time.time(),
+            'context_used': use_context,
+            'metadata': metadata
+        })
+        
+        # Format final response
+        source_tags_dict = {
+            'local': '[LOCAL]',
+            'apim': '[APIM]',
+            'foundry': '[FOUNDRY-AGENT]',
+            'apim-fallback': '[APIM*]',
+            'foundry-fallback': '[FOUNDRY*]',
+            'azure-fallback': '[AZURE*]',
+            'local-fallback': '[LOCAL*]'
+        }
+        
+        if success:
+            source_tag = source_tags_dict.get(actual_source, f'[{actual_source.upper()}]')
+            formatted_response = f"{source_tag} {clean_response}"
+            if show_reasoning:
+                formatted_response += f"\n\n[Routing: {reason}]"
+        else:
+            formatted_response = f"[ERROR] All routing options failed: {response}"
+        
+        return {
+            'response': clean_response,
+            'formatted_response': formatted_response,
+            'source': actual_source,
+            'responseTime': total_time,
+            'metadata': metadata,
+            'success': success
+        }
+
     def route(self, query: str, show_reasoning: bool = False) -> str:
         """
         Process query through hybrid three-tier routing system.
@@ -673,10 +869,42 @@ class HybridFoundryAPIMRouter:
                 'foundry_chain': 'Foundry → APIM → Azure → Local'
             }
         }
+    
+    # Conversation Context Management Methods
+    def get_conversation_history(self, count: int = 5) -> List[Dict[str, Any]]:
+        """Get recent conversation exchanges."""
+        return self.context_manager.get_recent_exchanges(count)
+    
+    def get_session_summary(self) -> Dict[str, Any]:
+        """Get comprehensive session summary including routing and conversation stats."""
+        context_summary = self.context_manager.get_session_summary()
+        routing_stats = self.get_comprehensive_stats()
+        
+        return {
+            'session_info': context_summary.get('session_info', {}),
+            'routing_stats': context_summary.get('routing_stats', {}),
+            'conversation_flow': context_summary.get('conversation_flow', []),
+            'hybrid_routing_stats': routing_stats,
+            'context_manager_stats': self.context_manager.get_conversation_summary()
+        }
+    
+    def clear_conversation_context(self):
+        """Clear conversation history and reset context."""
+        self.context_manager.clear_conversation()
+        print(f"🧹 Conversation context cleared for session {self.context_manager.session_id}")
+    
+    def export_conversation_history(self, filename: str = None) -> str:
+        """Export conversation history to JSON file."""
+        return self.context_manager.export_conversation(filename)
+    
+    def get_context_for_query(self, max_messages: int = 5) -> str:
+        """Get formatted conversation context for query processing."""
+        recent_messages = self.context_manager.get_messages_for_model('both', include_system=False)
+        return self.context_manager.get_conversation_context(recent_messages[-max_messages:])
 
 
 # Convenience functions for backwards compatibility
-def create_hybrid_router_from_env() -> HybridFoundryAPIMRouter:
+def create_hybrid_router_from_env(session_id: str = None) -> HybridFoundryAPIMRouter:
     """Create hybrid router using environment variables."""
     config = HybridRouterConfig(
         local_endpoint=os.environ.get("LOCAL_MODEL_ENDPOINT"),
@@ -692,4 +920,40 @@ def create_hybrid_router_from_env() -> HybridFoundryAPIMRouter:
         azure_api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-01")
     )
     
-    return HybridFoundryAPIMRouter(config)
+    return HybridFoundryAPIMRouter(config, session_id=session_id)
+
+
+# Test function for ConversationContextManager integration
+def test_context_integration():
+    """Test the integration between HybridFoundryAPIMRouter and ConversationContextManager."""
+    print("🧪 Testing ConversationContextManager integration...")
+    
+    # Create a minimal config for testing
+    config = HybridRouterConfig(
+        local_endpoint="http://localhost:1234",
+        local_model_id="test-model"
+    )
+    
+    # Create router with context management
+    router = HybridFoundryAPIMRouter(config, session_id="test_session")
+    
+    print(f"✅ Router created with session: {router.context_manager.session_id}")
+    print(f"✅ Context manager initialized: {type(router.context_manager).__name__}")
+    
+    # Test conversation history methods
+    history = router.get_conversation_history()
+    print(f"✅ Initial conversation history: {len(history)} exchanges")
+    
+    # Test session summary
+    summary = router.get_session_summary()
+    print(f"✅ Session summary keys: {list(summary.keys())}")
+    
+    # Test context retrieval
+    context = router.get_context_for_query()
+    print(f"✅ Context for query: {context}")
+    
+    print("🎉 ConversationContextManager integration test completed!")
+
+
+if __name__ == "__main__":
+    test_context_integration()

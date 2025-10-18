@@ -547,6 +547,283 @@ class ConversationManager:
             self.conversation_stats['last_model_used'] = sources[-1]
 
 
+class ConversationContextManager(ConversationManager):
+    """
+    Enhanced conversation context manager that aligns with HybridConversationManager 
+    from lab5_hybrid_orchestration notebook.
+    
+    This class provides:
+    - Session-based conversation management
+    - Context-aware message formatting  
+    - Hybrid routing compatibility
+    - Exchange tracking similar to lab5
+    """
+    
+    def __init__(self, session_id: str = None, max_history: int = 15):
+        super().__init__(max_history_length=max_history)
+        self.session_id = session_id or f"session_{int(time.time())}"
+        self.chat_history = []  # Lab5-style chat history
+        
+        # Enhanced stats to match lab5
+        self.conversation_stats.update({
+            'apim_responses': 0,
+            'foundry_responses': 0,
+            'azure_responses': 0,
+            'mock_responses': 0,
+            'fallback_uses': 0,
+            'session_start': datetime.now(),
+        })
+        
+        print(f"🗣️ ConversationContextManager initialized for session: {self.session_id}")
+    
+    def add_exchange(self, user_message: str, ai_response: str, source: str, 
+                    response_time: float, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Add a complete exchange (user + AI response) to conversation history.
+        This method aligns with the lab5 HybridConversationManager pattern.
+        
+        Args:
+            user_message: User's input message
+            ai_response: AI's response
+            source: Source of the response (local, apim, foundry, etc.)
+            response_time: Time taken to generate response
+            metadata: Additional metadata
+            
+        Returns:
+            Exchange dictionary with all details
+        """
+        # Create exchange in lab5 format
+        exchange = {
+            'timestamp': datetime.now(),
+            'user_message': user_message,
+            'response': ai_response,
+            'source': source,
+            'response_time': response_time,
+            'was_fallback': metadata.get('error', False) if metadata else False,
+            'exchange_number': len(self.chat_history) + 1,
+            'metadata': metadata or {}
+        }
+        
+        # Add to lab5-style chat history
+        self.chat_history.append(exchange)
+        
+        # Also add to the detailed conversation_history for compatibility
+        # Add user message
+        user_msg = ConversationMessage(
+            role=MessageRole.USER,
+            content=user_message,
+            timestamp=datetime.now().isoformat(),
+            metadata=metadata or {}
+        )
+        self.conversation_history.append(user_msg)
+        
+        # Add assistant message
+        try:
+            source_enum = ModelSource(source.lower())
+        except ValueError:
+            # Handle custom sources like 'apim', 'foundry'
+            source_enum = ModelSource.HYBRID
+        
+        ai_msg = ConversationMessage(
+            role=MessageRole.ASSISTANT,
+            content=ai_response,
+            timestamp=datetime.now().isoformat(),
+            source=source_enum,
+            response_time=response_time,
+            metadata=metadata or {}
+        )
+        self.conversation_history.append(ai_msg)
+        
+        # Update statistics
+        self._update_enhanced_stats(source, response_time, exchange['was_fallback'])
+        self._update_token_count(user_message)
+        self._update_token_count(ai_response)
+        
+        return exchange
+    
+    def _update_enhanced_stats(self, source: str, response_time: float, was_fallback: bool):
+        """Update enhanced statistics compatible with lab5 format."""
+        self.conversation_stats['total_exchanges'] += 1
+        
+        # Track by source type (enhanced for lab5 compatibility)
+        source_lower = source.lower()
+        if 'local' in source_lower:
+            self.conversation_stats['local_responses'] += 1
+        elif 'apim' in source_lower:
+            self.conversation_stats['apim_responses'] += 1
+        elif 'foundry' in source_lower:
+            self.conversation_stats['foundry_responses'] += 1
+        elif 'azure' in source_lower:
+            self.conversation_stats['azure_responses'] += 1
+        elif 'cloud' in source_lower:
+            self.conversation_stats['cloud_responses'] += 1
+        elif 'mock' in source_lower:
+            self.conversation_stats['mock_responses'] += 1
+        
+        # Track model switches
+        if self.conversation_stats['last_model_used'] and self.conversation_stats['last_model_used'] != source:
+            self.conversation_stats['model_switches'] += 1
+        
+        # Track fallback usage
+        if was_fallback:
+            self.conversation_stats['fallback_uses'] += 1
+        
+        self.conversation_stats['last_model_used'] = source
+        
+        # Update average response time
+        total_responses = (self.conversation_stats['local_responses'] + 
+                          self.conversation_stats['cloud_responses'] +
+                          self.conversation_stats['apim_responses'] +
+                          self.conversation_stats['foundry_responses'] +
+                          self.conversation_stats['azure_responses'] +
+                          self.conversation_stats['mock_responses'])
+        
+        if total_responses > 0:
+            current_avg = self.conversation_stats['average_response_time']
+            self.conversation_stats['average_response_time'] = (
+                (current_avg * (total_responses - 1) + response_time) / total_responses
+            )
+    
+    def get_conversation_context(self, recent_messages: List[Dict], max_context_length: int = 2000) -> str:
+        """
+        Get conversation context formatted for model input.
+        This method provides context similar to lab5 format.
+        
+        Args:
+            recent_messages: Recent conversation messages
+            max_context_length: Maximum context length
+            
+        Returns:
+            Formatted context string
+        """
+        if not recent_messages:
+            return ""
+        
+        # Format recent exchanges for context
+        context_parts = []
+        context_parts.append("Previous conversation context:")
+        
+        for msg in recent_messages[-5:]:  # Last 5 exchanges
+            if msg.get('role') == 'user':
+                context_parts.append(f"User: {msg['content']}")
+            elif msg.get('role') == 'assistant':
+                context_parts.append(f"Assistant: {msg['content']}")
+        
+        context = "\n".join(context_parts)
+        
+        # Truncate if too long
+        if len(context) > max_context_length:
+            context = context[:max_context_length] + "...[truncated]"
+        
+        return context
+    
+    def get_recent_exchanges(self, count: int = 3) -> List[Dict[str, Any]]:
+        """Get recent exchanges in lab5 format."""
+        return self.chat_history[-count:] if count > 0 else self.chat_history
+    
+    def get_session_summary(self) -> Dict[str, Any]:
+        """Get session summary compatible with lab5 format."""
+        if not self.chat_history:
+            return {"message": "No conversation history available"}
+        
+        # Calculate session duration
+        session_duration = datetime.now() - self.conversation_stats['session_start']
+        
+        # Analyze routing patterns
+        total = self.conversation_stats['total_exchanges']
+        routing_distribution = {
+            'local': (self.conversation_stats['local_responses'] / total * 100) if total > 0 else 0,
+            'apim': (self.conversation_stats['apim_responses'] / total * 100) if total > 0 else 0,
+            'foundry': (self.conversation_stats['foundry_responses'] / total * 100) if total > 0 else 0,
+            'azure': (self.conversation_stats['azure_responses'] / total * 100) if total > 0 else 0,
+            'cloud': (self.conversation_stats['cloud_responses'] / total * 100) if total > 0 else 0,
+            'mock': (self.conversation_stats['mock_responses'] / total * 100) if total > 0 else 0
+        }
+        
+        return {
+            'session_info': {
+                'session_id': self.session_id,
+                'duration': str(session_duration).split('.')[0],
+                'total_exchanges': total,
+                'conversation_length': len(self.chat_history)
+            },
+            'routing_stats': {
+                'distribution': routing_distribution,
+                'model_switches': self.conversation_stats['model_switches'],
+                'fallback_uses': self.conversation_stats['fallback_uses'],
+                'current_source': self.conversation_stats['last_model_used']
+            },
+            'conversation_flow': [
+                {
+                    'exchange': ex['exchange_number'],
+                    'source': ex['source'],
+                    'fallback': ex['was_fallback'],
+                    'timestamp': ex['timestamp'].strftime('%H:%M:%S')
+                }
+                for ex in self.chat_history[-5:]  # Last 5 exchanges
+            ]
+        }
+    
+    def clear_conversation(self):
+        """Clear conversation history and reset statistics."""
+        self.chat_history.clear()
+        self.conversation_history.clear()
+        self.conversation_stats = {
+            'total_exchanges': 0,
+            'local_responses': 0,
+            'cloud_responses': 0,
+            'apim_responses': 0,
+            'foundry_responses': 0,
+            'azure_responses': 0,
+            'mock_responses': 0,
+            'model_switches': 0,
+            'fallback_uses': 0,
+            'start_time': datetime.now(),
+            'session_start': datetime.now(),
+            'last_model_used': None,
+            'total_tokens_estimated': 0,
+            'average_response_time': 0.0,
+            'errors_count': 0
+        }
+        print(f"🧹 Conversation cleared for session {self.session_id}")
+    
+    def export_conversation(self, filename: str = None) -> str:
+        """Export conversation to JSON file in lab5 format."""
+        if not filename:
+            filename = f"conversation_{self.session_id}.json"
+        
+        export_data = {
+            'session_info': {
+                'session_id': self.session_id,
+                'start_time': self.conversation_stats['session_start'].isoformat(),
+                'export_time': datetime.now().isoformat(),
+                'total_exchanges': len(self.chat_history)
+            },
+            'conversation': [
+                {
+                    'exchange_number': ex['exchange_number'],
+                    'timestamp': ex['timestamp'].isoformat(),
+                    'user_message': ex['user_message'],
+                    'response': ex['response'],
+                    'source': ex['source'],
+                    'response_time': ex['response_time'],
+                    'was_fallback': ex['was_fallback'],
+                    'metadata': ex['metadata']
+                }
+                for ex in self.chat_history
+            ],
+            'statistics': {
+                key: value.isoformat() if isinstance(value, datetime) else value
+                for key, value in self.conversation_stats.items()
+            }
+        }
+        
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(export_data, f, indent=2, default=str)
+        
+        return filename
+
+
 # Example usage and testing
 if __name__ == "__main__":
     # Create conversation manager
@@ -580,6 +857,50 @@ if __name__ == "__main__":
                 print(f"     {sub_key}: {sub_value:.3f}" if isinstance(sub_value, float) else f"     {sub_key}: {sub_value}")
         else:
             print(f"   {key}: {value}")
+    
+    # Test ConversationContextManager
+    print("\n" + "=" * 40)
+    print("🗣️  ConversationContextManager Test")
+    
+    context_mgr = ConversationContextManager("test_session")
+    
+    # Test adding exchanges
+    context_mgr.add_exchange(
+        "Hello!", 
+        "Hi there! How can I help you?", 
+        "local", 
+        0.12,
+        {"context_used": False}
+    )
+    
+    context_mgr.add_exchange(
+        "What's the weather like?", 
+        "I don't have access to real-time weather data.", 
+        "local", 
+        0.08,
+        {"context_used": True}
+    )
+    
+    context_mgr.add_exchange(
+        "Can you analyze complex data patterns?", 
+        "I can help analyze complex data patterns using various techniques.", 
+        "foundry", 
+        2.45,
+        {"context_used": True}
+    )
+    
+    # Show session summary
+    session_summary = context_mgr.get_session_summary()
+    print(f"\n📊 Session Summary:")
+    print(f"Session ID: {session_summary['session_info']['session_id']}")
+    print(f"Duration: {session_summary['session_info']['duration']}")
+    print(f"Total Exchanges: {session_summary['session_info']['total_exchanges']}")
+    print(f"Model Switches: {session_summary['routing_stats']['model_switches']}")
+    
+    print(f"\n🎯 Routing Distribution:")
+    for source, percentage in session_summary['routing_stats']['distribution'].items():
+        if percentage > 0:
+            print(f"   {source}: {percentage:.1f}%")
     
     # Test export
     export_file = conv_mgr.export_conversation("test_conversation.json")
