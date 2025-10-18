@@ -205,27 +205,7 @@ By completing this workshop, you will have built a system that demonstrates:
 ![Cloud Response Example](images/hybrid_routermultiturn2.png)
 *Complex cloud model response with routing explanation*
 
-## 🏗️ Architecture Diagrams
-
-Visual representations of the hybrid routing system architecture are available:
-
-### Azure Architecture Diagram
-
-Generate comprehensive Azure architecture diagrams using the Python diagrams library:
-
-```bash
-# Generate all architecture diagrams
-python setup_and_generate_diagrams.py
-
-# Or generate individual diagrams
-python azure_simple.py              # Main Azure architecture (local-first)
-python dataflow_local_first.py      # Local-first data flow
-```
-
-**Generated files**:
-
-- `hybrid_llm_router_architecture.png` - Main architecture with Router Logic design
-- `hybrid_router_architecture_dataflow.png` - Data flow showing routing decisions
+## 🏗️ Architecture Highlights
 
 **Architecture highlights (Router Logic Design)**:
 
