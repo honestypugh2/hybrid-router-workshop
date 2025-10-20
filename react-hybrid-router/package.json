@@ -19,7 +19,13 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "serve": "serve -s build",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "start-with-basic-backend": "echo 'Starting with basic backend (port 8080)' && react-scripts start",
+    "start-with-enhanced-backend": "echo 'Starting with enhanced backend (port 8000)' && react-scripts start",
+    "demo": "start_demo.bat",
+    "demo-enhanced": "start_enhanced_demo.bat", 
+    "demo-react": "start_react_demo.bat",
+    "demo-python": "python start_react_demo.py"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.4",

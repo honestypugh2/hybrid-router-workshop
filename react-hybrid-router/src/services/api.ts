@@ -1,24 +1,44 @@
-// Enhanced API service for hybrid router backend (mirroring streamlit_multiturn_demo.py)
+// Enhanced API service for hybrid router backend with dual backend support
 import { RouterStrategy, SystemStatus, RoutingMetadata } from '../types';
 
+interface BackendConfig {
+  url: string;
+  endpointPattern: 'basic' | 'enhanced'; // basic = /route, enhanced = /api/*
+  port: number;
+  name: string;
+}
+
 export class HybridRouterAPI {
-  private baseUrl: string;
+  private backends: BackendConfig[];
   private enableMockFallback: boolean;
   private sessionId: string;
+  private activeBackend: BackendConfig | null = null;
 
-  constructor(baseUrl?: string) {
-    // Use environment variable or fallback to default
-    this.baseUrl = baseUrl || process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+  constructor() {
+    // Configure multiple backends to try
+    this.backends = [
+      {
+        url: 'http://localhost:8000',
+        endpointPattern: 'enhanced',
+        port: 8000,
+        name: 'Enhanced Backend (root level backend_api.py)'
+      },
+      {
+        url: 'http://localhost:8080',
+        endpointPattern: 'basic',
+        port: 8080,
+        name: 'Basic Backend (react directory backend_api.py)'
+      }
+    ];
+    
     this.enableMockFallback = process.env.REACT_APP_ENABLE_MOCK_FALLBACK === 'true';
     this.sessionId = this.getOrCreateSessionId();
     
-    if (process.env.REACT_APP_DEBUG_MODE === 'true') {
-      console.log('🔧 HybridRouterAPI initialized:', {
-        baseUrl: this.baseUrl,
-        enableMockFallback: this.enableMockFallback,
-        sessionId: this.sessionId
-      });
-    }
+    console.log('🔧 HybridRouterAPI initialized with dual backend support:', {
+      backends: this.backends,
+      enableMockFallback: this.enableMockFallback,
+      sessionId: this.sessionId
+    });
   }
 
   private getOrCreateSessionId(): string {
@@ -31,6 +51,41 @@ export class HybridRouterAPI {
     return sessionId;
   }
 
+  private async testBackendConnection(backend: BackendConfig): Promise<boolean> {
+    try {
+      const healthEndpoint = backend.endpointPattern === 'enhanced' ? '/api/health' : '/health';
+      const response = await fetch(`${backend.url}${healthEndpoint}`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(3000) // 3 second timeout
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  private async findActiveBackend(): Promise<BackendConfig | null> {
+    if (this.activeBackend) {
+      // Test if current active backend is still working
+      if (await this.testBackendConnection(this.activeBackend)) {
+        return this.activeBackend;
+      }
+    }
+
+    // Test all backends to find a working one
+    for (const backend of this.backends) {
+      console.log(`🔍 Testing backend: ${backend.name} at ${backend.url}`);
+      if (await this.testBackendConnection(backend)) {
+        console.log(`✅ Found working backend: ${backend.name}`);
+        this.activeBackend = backend;
+        return backend;
+      }
+    }
+
+    console.warn('❌ No working backends found');
+    return null;
+  }
+
   async routeQuery(query: string, strategy: RouterStrategy, contextEnabled: boolean = true): Promise<{
     response: string;
     source: string;
@@ -39,31 +94,51 @@ export class HybridRouterAPI {
   }> {
     const startTime = Date.now();
     
-    if (process.env.REACT_APP_DEBUG_MODE === 'true') {
-      console.log('🚀 Routing query:', { 
-        query: query.substring(0, 50), 
-        strategy, 
-        contextEnabled,
-        sessionId: this.sessionId 
-      });
-    }
+    console.log('🚀 Routing query:', { 
+      query: query.substring(0, 50), 
+      strategy, 
+      contextEnabled,
+      sessionId: this.sessionId 
+    });
     
+    const backend = await this.findActiveBackend();
+    if (!backend) {
+      if (this.enableMockFallback) {
+        return this.getMockResponse(query, strategy, Date.now() - startTime);
+      }
+      throw new Error('No backend servers are available');
+    }
+
     try {
-      // Determine endpoint based on strategy
-      let endpoint = '/route';
-      if (strategy === 'bert') {
-        endpoint = '/route/bert';
-      } else if (strategy === 'phi') {
-        endpoint = '/route/phi';
+      // Configure request based on backend type
+      let endpoint: string;
+      let requestBody: any;
+
+      if (backend.endpointPattern === 'enhanced') {
+        // Enhanced backend (/api/* endpoints)
+        endpoint = '/api/query';
+        requestBody = {
+          query,
+          strategy,
+          session_id: contextEnabled ? this.sessionId : undefined,
+          context_enabled: contextEnabled
+        };
+      } else {
+        // Basic backend (/route endpoints)
+        endpoint = '/route';
+        if (strategy === 'bert') {
+          endpoint = '/route/bert';
+        } else if (strategy === 'phi') {
+          endpoint = '/route/phi';
+        }
+        requestBody = {
+          query,
+          strategy,
+          session_id: contextEnabled ? this.sessionId : undefined
+        };
       }
       
-      const requestBody = {
-        query,
-        strategy,
-        session_id: contextEnabled ? this.sessionId : undefined
-      };
-      
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      const response = await fetch(`${backend.url}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,22 +153,35 @@ export class HybridRouterAPI {
       const data = await response.json();
       const responseTime = (Date.now() - startTime) / 1000;
 
-      if (process.env.REACT_APP_DEBUG_MODE === 'true') {
-        console.log('✅ Query successful:', {
-          source: data.source,
-          responseTime: data.responseTime || responseTime,
-          metadata: data.metadata
-        });
-      }
+      console.log('✅ Query successful:', {
+        backend: backend.name,
+        source: data.source,
+        responseTime: data.responseTime || responseTime,
+        metadata: data.metadata
+      });
 
       return {
         response: data.response,
         source: data.source,
         responseTime: data.responseTime || responseTime,
-        metadata: data.metadata || this.createFallbackMetadata(strategy, data.source, responseTime)
+        metadata: {
+          ...data.metadata,
+          backend_used: backend.name,
+          backend_pattern: backend.endpointPattern,
+          backend_url: backend.url
+        }
       };
     } catch (error) {
-      console.warn('⚠️ API request failed:', error);
+      console.warn(`⚠️ API request failed for ${backend.name}:`, error);
+      
+      // Mark this backend as failed and try to find another
+      this.activeBackend = null;
+      const fallbackBackend = await this.findActiveBackend();
+      
+      if (fallbackBackend && fallbackBackend !== backend) {
+        console.log(`🔄 Retrying with fallback backend: ${fallbackBackend.name}`);
+        return this.routeQuery(query, strategy, contextEnabled);
+      }
       
       // Only use mock response if explicitly enabled
       if (this.enableMockFallback) {
@@ -171,67 +259,104 @@ export class HybridRouterAPI {
   }
 
   async getSystemStatus(): Promise<SystemStatus> {
+    const backend = await this.findActiveBackend();
+    
+    if (!backend) {
+      return {
+        availableRouters: { hybrid: false, rule_based: false, bert: false, phi: false },
+        systemHealth: 'error'
+      };
+    }
+
     try {
-      if (process.env.REACT_APP_DEBUG_MODE === 'true') {
-        console.log('🔍 Checking system status...');
-      }
-      
-      const response = await fetch(`${this.baseUrl}/status`, {
+      const endpoint = backend.endpointPattern === 'enhanced' ? '/api/system-status' : '/status';
+      const response = await fetch(`${backend.url}${endpoint}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Status check failed: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
-      if (process.env.REACT_APP_DEBUG_MODE === 'true') {
-        console.log('✅ System status:', data);
-      }
-      
+      console.log('✅ System status retrieved:', {
+        backend: backend.name,
+        systemHealth: data.systemHealth,
+        availableRouters: data.availableRouters
+      });
+
       return {
-        availableRouters: data.availableRouters || {},
-        systemHealth: data.systemHealth || 'error',
+        availableRouters: data.availableRouters || { hybrid: false, rule_based: false, bert: false, phi: false },
+        systemHealth: data.systemHealth || 'unknown',
         hybrid_router_targets: data.hybrid_router_targets,
         capabilities: data.capabilities
       };
     } catch (error) {
-      console.warn('⚠️ System status check failed:', error);
+      console.warn(`⚠️ Failed to get system status from ${backend.name}:`, error);
+      
+      // Try fallback backend
+      this.activeBackend = null;
+      const fallbackBackend = await this.findActiveBackend();
+      
+      if (fallbackBackend && fallbackBackend !== backend) {
+        return this.getSystemStatus();
+      }
       
       return {
-        availableRouters: {
-          hybrid: false,
-          rule_based: false,
-          bert: false,
-          phi: false,
-          local: false,
-          cloud: false
-        },
+        availableRouters: { hybrid: false, rule_based: false, bert: false, phi: false },
         systemHealth: 'error'
       };
     }
   }
 
   async getCapabilities(): Promise<any> {
+    const backend = await this.findActiveBackend();
+    
+    if (!backend) {
+      return {
+        available_targets: {},
+        hybrid_routing: false,
+        bert_routing: false,
+        phi_routing: false,
+        context_management: false,
+        multi_turn_support: false
+      };
+    }
+
     try {
-      const response = await fetch(`${this.baseUrl}/capabilities`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Capabilities check failed: ${response.status}`);
+      // Enhanced backend has capabilities endpoint, basic doesn't
+      if (backend.endpointPattern === 'enhanced') {
+        const response = await fetch(`${backend.url}/api/capabilities`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          return await response.json();
+        }
       }
       
-      return await response.json();
+      // Fallback for basic backend or failed enhanced request
+      return {
+        available_targets: {
+          local: true,
+          apim: true,
+          foundry: true,
+          azure: true
+        },
+        hybrid_routing: true,
+        bert_routing: backend.endpointPattern === 'basic',
+        phi_routing: backend.endpointPattern === 'basic',
+        context_management: true,
+        multi_turn_support: true
+      };
     } catch (error) {
-      console.warn('⚠️ Capabilities check failed:', error);
+      console.warn(`⚠️ Failed to get capabilities from ${backend.name}:`, error);
       return {
         available_targets: {},
         hybrid_routing: false,
@@ -245,16 +370,23 @@ export class HybridRouterAPI {
 
   // Clear session context
   async clearContext(): Promise<void> {
-    try {
-      // Clear context on the backend
-      await fetch(`${this.baseUrl}/session/${this.sessionId}/context`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch (error) {
-      console.warn('⚠️ Failed to clear server-side context:', error);
+    const backend = await this.findActiveBackend();
+    
+    if (backend) {
+      try {
+        const endpoint = backend.endpointPattern === 'enhanced' 
+          ? `/api/clear-context/${this.sessionId}`
+          : `/session/${this.sessionId}/context`;
+          
+        await fetch(`${backend.url}${endpoint}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      } catch (error) {
+        console.warn('⚠️ Failed to clear server-side context:', error);
+      }
     }
     
     // Always clear local session ID and create new one
@@ -264,8 +396,18 @@ export class HybridRouterAPI {
 
   // Get session context from backend
   async getSessionContext(): Promise<any> {
+    const backend = await this.findActiveBackend();
+    
+    if (!backend) {
+      return { session_id: this.sessionId, chat_history: [], total_exchanges: 0 };
+    }
+
     try {
-      const response = await fetch(`${this.baseUrl}/session/${this.sessionId}/context`, {
+      const endpoint = backend.endpointPattern === 'enhanced'
+        ? `/api/conversation-history/${this.sessionId}`
+        : `/session/${this.sessionId}/context`;
+        
+      const response = await fetch(`${backend.url}${endpoint}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -288,8 +430,18 @@ export class HybridRouterAPI {
 
   // Get session insights from backend
   async getSessionInsights(): Promise<any> {
+    const backend = await this.findActiveBackend();
+    
+    if (!backend) {
+      return { message: "No backend available" };
+    }
+
     try {
-      const response = await fetch(`${this.baseUrl}/session/${this.sessionId}/insights`, {
+      const endpoint = backend.endpointPattern === 'enhanced'
+        ? `/api/conversation-insights/${this.sessionId}`
+        : `/session/${this.sessionId}/insights`;
+        
+      const response = await fetch(`${backend.url}${endpoint}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

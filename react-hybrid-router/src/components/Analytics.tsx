@@ -159,7 +159,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                         cy="50%"
                         labelLine={false}
                         label={({ name, percentage }) => `${name} (${percentage}%)`}
-                        outerRadius={80}
+                        outerRadius={60}
                         fill="#8884d8"
                         dataKey="value"
                       >

@@ -3,11 +3,15 @@
 .analytics-panel {
   background-color: #f8f9fa;
   border-left: 1px solid #dee2e6;
-  padding: 1rem;
+  padding: 0.75rem;
   height: 100vh;
   overflow-y: auto;
   min-width: 300px;
   max-width: 400px;
+}
+
+.analytics {
+  padding: 0.5rem;
 }
 
 .analytics-section {
@@ -18,14 +22,30 @@
   font-size: 1.2rem;
   font-weight: 600;
   color: #495057;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid #6c757d;
 }
 
+.analytics h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+.analytics h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.analytics h4 {
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
 /* Router Strategy Selection */
 .strategy-selector {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .strategy-selector label {
@@ -84,7 +104,7 @@
 
 /* System Status */
 .system-status {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .status-grid {
@@ -120,7 +140,11 @@
 
 /* Performance Trends */
 .performance-trends {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.performance-trend {
+  margin-bottom: 1rem;
 }
 
 .trend-chart {
@@ -138,7 +162,23 @@
 
 /* Model Usage Distribution */
 .model-usage {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.source-distribution {
+  margin-bottom: 1rem;
+}
+
+.conversation-metrics {
+  margin-bottom: 1rem;
+}
+
+.conversation-starters {
+  margin-bottom: 1rem;
+}
+
+.session-summary {
+  margin-bottom: 0.5rem;
 }
 
 .usage-item {
@@ -257,12 +297,72 @@
 /* Chart Styles */
 .chart-container {
   width: 100%;
-  height: 300px;
-  margin-bottom: 20px;
+  height: 180px;
+  margin-bottom: 8px;
 }
 
 .distribution-table {
-  margin-top: 10px;
+  margin-top: 8px;
+}
+
+.source-distribution-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.conversation-starters-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.complexity-category h4 {
+  margin: 0.5rem 0 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.complexity-category ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.complexity-category li {
+  margin-bottom: 0.2rem;
+  font-size: 0.8rem;
+}
+
+.additional-metrics {
+  margin-top: 0.75rem;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  font-size: 0.8rem;
+}
+
+.trend-summary {
+  display: flex;
+  gap: 1rem;
+}
+
+.trend-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.summary-stats {
+  font-size: 0.8rem;
+}
+
+.summary-stats > div {
+  margin-bottom: 0.25rem;
 }
 
 /* Loading states */
