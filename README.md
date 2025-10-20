@@ -91,7 +91,49 @@ This workshop uses a Windows machine for on-device.
    az login
    ```
 
-## 📚 Workshop Structure
+## � Quick Demo Scripts
+
+**📁 All React demo scripts are located in the `react-hybrid-router` directory.**
+
+### Available Demos
+
+```bash
+# Navigate to React directory first
+cd react-hybrid-router
+
+# Enhanced Demo (Recommended) - Dual backend support
+./start_enhanced_demo.bat
+
+# Basic Demo - Original backend 
+./start_demo.bat
+
+# React Demo with Python startup
+./start_react_demo.bat
+python start_react_demo.py
+
+# Or use npm scripts
+npm run demo-enhanced    # Enhanced demo
+npm run demo            # Basic demo  
+npm run demo-react      # React demo
+npm run demo-python     # Python startup
+```
+
+**From project root, use the helper scripts:**
+```bash
+# Windows - Helper script that navigates to react-hybrid-router
+.\start_demos.bat
+
+# Linux/macOS - Helper script that navigates to react-hybrid-router
+./start_demos.sh
+```
+
+> **⚠️ Important**: React demo scripts are **no longer** in the project root. All scripts have been moved to `react-hybrid-router` directory for better organization.
+
+![React App Chat Interface](images/react_hybrid_app_main.png)
+
+![React App Chat Routing Details](images/react_hybrid_app_routingdetails.png)
+
+## �📚 Workshop Structure
 
 ### 🔧 Core Modules (`modules/`)
 
