@@ -44,8 +44,13 @@ The system uses a **central Router Logic** that analyzes each query and intellig
 - Python 3.10+
 - Azure subscription with AI Foundry access
 - Azure Foundry Local installation
-- Basic knowledge of Python and Azure services
+- Azure OpenAI
 - Azure API Management (optional)
+- Application Insights
+- Log Analytics Workspace (optional)
+- Basic knowledge of Python and Azure services
+- Deployed models: gpt-4-1, gpt-4o, gpt-4o-mini, model-router
+- Roles: [Azure AI Foundry project roles](https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/rbac-azure-ai-foundry#azure-ai-foundry-project-roles)
 
 ### Assumption
 
@@ -234,8 +239,6 @@ By completing this workshop, you will have built a system that demonstrates:
 - **Scalable Design**: Modular components for easy enhancement
 - **Comprehensive Monitoring**: Full observability stack
 - **Business Value**: Clear ROI demonstration through metrics
-
-#### *Complete Hybrid Routing System Architecture Diagram (COMING SOON)*
 
 ## 🛟 Troubleshooting
 
