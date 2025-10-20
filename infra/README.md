@@ -232,7 +232,7 @@ The project includes a comprehensive cleanup script that uses the `modules/utils
 1. **Navigate to the project root**:
 
    ```bash
-   cd hybrid-llm-router-workshop
+   cd hybrid-router-workshop
    ```
 
 2. **Activate the Python virtual environment**:
