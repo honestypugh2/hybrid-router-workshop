@@ -219,8 +219,6 @@ By completing this workshop, you will have built a system that demonstrates:
 - **Unified Response**: Single response path regardless of processing location
 - **Context Continuity**: Maintained across all processing paths
 
-📋 See `DIAGRAMS_README.md` for detailed setup instructions and troubleshooting.
-
 ## 📊 Expected Outcomes
 
 ### Performance Metrics
