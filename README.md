@@ -56,6 +56,17 @@ The system uses a **central Router Logic** that analyzes each query and intellig
 
 This workshop uses a Windows machine for on-device.
 
+> **⚠️ IMPORTANT**: Do not proceed to the Setup section until **ALL** prerequisites above are complete. Ensure you have:
+>
+> - ✅ Azure subscription with AI Foundry access configured
+> - ✅ Azure Foundry Local installed and running
+> - ✅ All required Azure services (OpenAI, APIM, Application Insights, etc.) deployed
+> - ✅ All models (gpt-4-1, gpt-4o, gpt-4o-mini, model-router) deployed and accessible
+> - ✅ Appropriate Azure roles assigned
+> - ✅ Network connectivity verified between all services
+>
+> Missing prerequisites will cause setup and lab failures. Use the infrastructure deployment guide (`infra/README.md`) to deploy required Azure resources first.
+
 ## 🛠️ Setup
 
 1. **Clone the workshop materials**:
