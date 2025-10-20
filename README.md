@@ -102,7 +102,35 @@ This workshop uses a Windows machine for on-device.
    az login
    ```
 
-## � Quick Demo Scripts
+## 🔧 Post-Deployment Configuration
+
+After deploying infrastructure and models, complete these configuration steps:
+
+### Step 1: Create Azure AI Foundry Agent
+
+1. Navigate to Azure AI Foundry portal
+2. Go to your deployed AI Foundry project
+3. Select **Agents** → **Create new agent**
+4. Configure agent with deployed models (gpt-4o, gpt-4o-mini, etc.)
+5. Note the agent endpoint URL for API Management
+
+### Step 2: Configure API Management
+
+1. Open Azure API Management service
+2. Go to **APIs** → **Add API** → **Blank API**
+3. Create APIs for:
+   - Azure AI Foundry models (`/ai-foundry/*`)
+   - Azure OpenAI models (`/openai/*`)
+4. Set backend services to your deployed model endpoints
+5. Configure authentication and rate limiting policies
+
+### Step 3: Test Integration
+
+1. Test API Management endpoints
+2. Verify agent responses
+3. Confirm routing functionality
+
+## 🚀 Quick Demo Scripts
 
 **📁 All React demo scripts are located in the `react-hybrid-router` directory.**
 
