@@ -5,6 +5,7 @@ A comprehensive React.js + TypeScript application that provides a sophisticated 
 ## 🌟 Features
 
 ### Core Functionality
+
 - **Multi-turn Conversations**: Context-aware chat with session management and conversation history
 - **Multiple Routing Strategies**: Switch between hybrid, rule-based, BERT, and PHI routing
 - **Real-time Performance Tracking**: Response times, model switches, and comprehensive analytics
@@ -12,6 +13,7 @@ A comprehensive React.js + TypeScript application that provides a sophisticated 
 - **System Status Monitoring**: Live router availability and health checking
 
 ### Advanced Features
+
 - **Expandable Routing Details**: Click exchanges to see detailed routing analysis
 - **Performance Analytics**: Comprehensive metrics, trends, and model usage distribution
 - **Session Insights**: Duration tracking, context usage, and efficiency metrics
@@ -23,12 +25,14 @@ A comprehensive React.js + TypeScript application that provides a sophisticated 
 ## 🚀 Quick Start
 
 ### Option 1: Use the Startup Script (Recommended)
+
 ```bash
 # Run the enhanced demo startup script
 ./start_enhanced_demo.bat
 ```
 
 This script will:
+
 - Check prerequisites (Python, Node.js)
 - Set up virtual environment
 - Install dependencies
@@ -37,6 +41,7 @@ This script will:
 ### Option 2: Manual Startup
 
 #### Backend (FastAPI)
+
 ```bash
 # Install Python dependencies
 pip install fastapi uvicorn pydantic
@@ -46,6 +51,7 @@ python backend_api.py
 ```
 
 #### Frontend (React)
+
 ```bash
 # Navigate to React app directory
 cd react-hybrid-router
@@ -58,6 +64,7 @@ npm start
 ```
 
 ### Option 3: Development Setup
+
 ```bash
 # Build for production
 npm run build
@@ -68,16 +75,17 @@ npm install react @types/react
 
 ## 🔗 Access Points
 
-- **React Frontend**: http://localhost:3000
-- **FastAPI Backend**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-- **API Health Check**: http://localhost:8000/api/health
+- **React Frontend**: <http://localhost:3000>
+- **FastAPI Backend**: <http://localhost:8000>
+- **API Documentation**: <http://localhost:8000/docs>
+- **API Health Check**: <http://localhost:8000/api/health>
 
 ## 📱 User Interface
 
 ### Main Components
 
 #### Chat Interface
+
 - **Message Input**: Submit queries with selected routing strategy
 - **Conversation History**: Expandable exchanges with detailed metadata
 - **Routing Analysis**: Click any exchange to see:
@@ -87,6 +95,7 @@ npm install react @types/react
   - Confidence scores
 
 #### Analytics Panel
+
 - **Strategy Selector**: Choose between routing methods
 - **System Status**: Live router availability indicators
 - **Performance Metrics**: Real-time statistics and trends
@@ -96,13 +105,16 @@ npm install react @types/react
 ### Interactive Features
 
 #### Expandable Exchange Details
+
 Each conversation exchange can be expanded to show:
+
 - **Routing Decision**: Why this model was chosen
 - **Context Information**: What context was used
 - **Performance Data**: Response time and confidence scores
 - **Model Switching**: When and why models changed
 
 #### Real-time Analytics
+
 - **Live Metrics**: Updated with each exchange
 - **Performance Trends**: Historical response times
 - **Context Usage Tracking**: How often context helps improve responses
@@ -111,6 +123,7 @@ Each conversation exchange can be expanded to show:
 ## 🎯 Testing Scenarios
 
 ### Simple Queries (Local Routing)
+
 ```
 "Hello there!"
 "What is 25 + 17?"
@@ -118,6 +131,7 @@ Each conversation exchange can be expanded to show:
 ```
 
 ### Moderate Complexity
+
 ```
 "Explain machine learning"
 "Compare Python and Java"
@@ -125,6 +139,7 @@ Each conversation exchange can be expanded to show:
 ```
 
 ### Complex Queries (Cloud Routing)
+
 ```
 "Analyze hybrid AI architecture patterns"
 "Write a business case for AI adoption"
@@ -134,6 +149,7 @@ Each conversation exchange can be expanded to show:
 ## 🔧 Architecture
 
 ### Project Structure
+
 ```
 react-hybrid-router/
 ├── src/
@@ -153,18 +169,21 @@ react-hybrid-router/
 ```
 
 ### Frontend (React + TypeScript)
+
 - **App.tsx**: Main container with state management and layout orchestration
 - **ChatInterface.tsx**: Enhanced chat interface with conversation history and expandable details
 - **Analytics.tsx**: Comprehensive metrics dashboard and configuration panel
 - **api.ts**: Structured API service layer with session management and fallback handling
 
 ### Backend (FastAPI + Python)
+
 - **Enhanced API**: Full feature parity with Streamlit version
 - **Session Management**: Context-aware conversation handling
 - **Multiple Routers**: Integration with hybrid, BERT, PHI, and rule-based routing
 - **Real-time Status**: System health and availability monitoring
 
 ### Router Integration
+
 - **Hybrid Router**: 3-tier routing (Local → APIM → Foundry)
 - **BERT Router**: ML-based query classification
 - **PHI Router**: Small language model routing
@@ -173,12 +192,14 @@ react-hybrid-router/
 ## 📊 Analytics & Insights
 
 ### Conversation Metrics
+
 - Total exchanges and model switches
 - Average, fastest, and slowest response times
 - Context usage rate and session duration
 - Model distribution and efficiency analysis
 
 ### System Monitoring
+
 - Router availability status with real-time updates
 - Health check indicators and performance trends
 - Hybrid router target status monitoring
@@ -187,6 +208,7 @@ react-hybrid-router/
 ## 🔄 API Integration
 
 ### Core Endpoints
+
 - `POST /api/query`: Route queries with context management
 - `GET /api/system-status`: Get comprehensive router availability
 - `GET /api/conversation-insights/{session_id}`: Get detailed session analytics
@@ -194,6 +216,7 @@ react-hybrid-router/
 - `GET /api/health`: System health check
 
 ### Request/Response Models
+
 - Comprehensive Pydantic models for type safety
 - Enhanced metadata in all responses
 - Session management with UUIDs
@@ -202,6 +225,7 @@ react-hybrid-router/
 ## 🎨 Key Differences from Streamlit Version
 
 ### Technical Improvements
+
 - **React Hooks**: Advanced state management with useState, useEffect
 - **Component Architecture**: Modular, reusable, and testable components
 - **TypeScript Types**: Strongly typed interfaces and comprehensive props
@@ -210,6 +234,7 @@ react-hybrid-router/
 - **Event Handling**: React synthetic events with optimal performance
 
 ### User Experience Enhancements
+
 - **Interactive Elements**: Expandable details and hover effects
 - **Real-time Updates**: Live metrics and status indicators
 - **Mobile Responsiveness**: Works seamlessly across devices
@@ -233,6 +258,7 @@ react-hybrid-router/
 ## 🤝 Integration & Compatibility
 
 This React application seamlessly integrates with:
+
 - **Existing Router Modules**: Hybrid, BERT, PHI, and rule-based routers
 - **Context Manager**: Advanced conversation context handling
 - **Configuration System**: Centralized configuration management
@@ -242,11 +268,13 @@ This React application seamlessly integrates with:
 ## 🛠️ Development
 
 ### Prerequisites
+
 - Node.js 16+ and npm/yarn
 - Python 3.8+ (for backend)
 - Modern web browser with JavaScript enabled
 
 ### Development Workflow
+
 ```bash
 # Install dependencies
 npm install
@@ -265,7 +293,9 @@ npm test
 ```
 
 ### Configuration Notes
+
 The lint errors in minimal setups are resolved by:
+
 1. Installing React dependencies: `npm install react @types/react`
 2. Setting up proper TypeScript configuration
 3. Adding JSX runtime configuration
