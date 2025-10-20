@@ -2,6 +2,20 @@
 
 This directory contains the Azure infrastructure as code (Bicep) templates for deploying the hybrid LLM router workshop resources.
 
+## 🚀 Quick Start
+
+### Deploy Infrastructure
+
+```bash
+.\infra\deploy.ps1 -ResourceGroupName "your-resource-group"
+```
+
+### Cleanup Resources
+
+```bash
+.venv\Scripts\activate.bat && python scripts/cleanup_script.py
+```
+
 ## 🏗️ Architecture
 
 The infrastructure includes the following Azure resources:
@@ -29,14 +43,17 @@ infra/
 ├── main.bicepparam             # Parameters file for deployment
 ├── deploy.ps1                 # PowerShell deployment script
 ├── README.md                  # This file
-└── modules/
-    ├── ai-foundry-project.bicep # Azure AI Foundry Project
-    ├── apim.bicep              # API Management service
-    ├── app-insights.bicep      # Application Insights
-    ├── azure-roles.json        # Azure built-in role definitions
-    ├── log-analytics.bicep     # Log Analytics workspace
-    ├── openai.bicep           # Azure OpenAI service with multiple models
-    └── role-assignment.bicep  # Role assignment module
+├── modules/
+│   ├── ai-foundry-project.bicep # Azure AI Foundry Project
+│   ├── apim.bicep              # API Management service
+│   ├── app-insights.bicep      # Application Insights
+│   ├── azure-roles.json        # Azure built-in role definitions
+│   ├── log-analytics.bicep     # Log Analytics workspace
+│   ├── openai.bicep           # Azure OpenAI service with multiple models
+│   ├── role-assignment.bicep  # Role assignment module
+│   └── utils.py               # Azure utility functions for deployment and cleanup
+└── scripts/
+    └── cleanup_script.py      # Automated resource cleanup script
 ```
 
 ## 🚀 Deployment
@@ -102,7 +119,7 @@ You can also deploy with inline parameters:
 
 ```bash
 az deployment group create \
-  --resource-group "rg-hybridllm-dev" \
+  --resource-group "rg-hybridllm-workshop-poc" \
   --template-file main.bicep \
   --parameters workloadName="hybridllm" \
                environmentName="dev" \
@@ -208,10 +225,109 @@ main.prod.bicepparam
 
 ### Resource Cleanup
 
-To remove all resources:
+#### Option 1: Using the Cleanup Script (Recommended)
+
+The project includes a comprehensive cleanup script that uses the `modules/utils.py` functions to properly clean up Azure resources:
+
+1. **Navigate to the project root**:
+
+   ```bash
+   cd hybrid-llm-router-workshop
+   ```
+
+2. **Activate the Python virtual environment**:
+
+   ```bash
+   # Windows
+   .venv\Scripts\activate.bat
+   
+   # Linux/Mac
+   source .venv/bin/activate
+   ```
+
+3. **Install required dependencies** (if not already installed):
+
+   ```bash
+   pip install requests
+   ```
+
+4. **Run the cleanup script**:
+
+   ```bash
+   python scripts/cleanup_script.py
+   ```
+
+   The script will:
+   - Prompt for confirmation before proceeding
+   - Show the deployment name and resource group to be cleaned
+   - Use the `cleanup_resources` function from `modules/utils.py`
+   - Properly delete and purge all Azure resources:
+     - AI Foundry projects
+     - Cognitive Services accounts (with purging)
+     - API Management services (with purging)
+     - Key Vault resources (with purging)
+     - Finally delete the entire resource group
+
+5. **Confirm deletion** when prompted:
+
+   ```
+   Are you sure you want to proceed? (yes/no): yes
+   ```
+
+#### Features of the Cleanup Script
+
+- ✅ **Comprehensive**: Handles all resource types deployed by the infrastructure
+- ✅ **Safe Purging**: Properly purges soft-deleted resources (Cognitive Services, APIM, Key Vault)
+- ✅ **Progress Tracking**: Colored output with timestamps and duration tracking
+- ✅ **Error Handling**: Graceful handling of missing resources or failed operations
+- ✅ **Confirmation**: Requires explicit confirmation before deletion
+- ✅ **Complete Cleanup**: Removes the entire resource group as the final step
+
+#### Customizing the Cleanup Script
+
+To cleanup a different resource group or deployment:
+
+1. **Edit the cleanup script** (`scripts/cleanup_script.py`):
+
+   ```python
+   def main():
+       deployment_name = "your-deployment-name"  # Change this
+       resource_group_name = "your-resource-group"  # Change this
+   ```
+
+2. **Or create a custom cleanup script**:
+
+   ```python
+   from modules.utils import cleanup_resources
+   
+   # Cleanup specific deployment
+   cleanup_resources("my-deployment", "my-resource-group")
+   ```
+
+#### Option 2: Manual Resource Group Deletion
+
+For simple cases, you can delete the entire resource group:
 
 ```bash
 az group delete --name "rg-hybridllm-dev" --yes --no-wait
+```
+
+**Note**: Manual deletion may leave soft-deleted resources that need separate purging.
+
+#### Option 3: Using utils.py Functions Directly
+
+For advanced users, you can use the utility functions directly:
+
+```python
+from modules.utils import cleanup_resources, delete_resource, get_resources
+
+# Cleanup entire deployment
+cleanup_resources("deployment-name", "resource-group-name")
+
+# Or cleanup individual resources
+resources = get_resources("resource-group-name", {})
+for resource in resources:
+    delete_resource(resource, "resource-group-name")
 ```
 
 ## 🆘 Troubleshooting
@@ -234,6 +350,53 @@ az group delete --name "rg-hybridllm-dev" --yes --no-wait
    - Verify all required parameters are provided
    - Check parameter value constraints (length, allowed values)
 
+4. **Cleanup Issues**:
+
+   - **Python Dependencies**: Install required packages with `pip install requests`
+   - **Virtual Environment**: Ensure `.venv` is activated before running cleanup script
+   - **Azure CLI Authentication**: Run `az login` if you get authentication errors
+   - **Soft-Deleted Resources**: The cleanup script handles purging automatically
+   - **Resource Dependencies**: Let the script handle dependency order (AI Foundry → Cognitive Services → APIM → Key Vault → Resource Group)
+   - **Permission Errors**: Ensure you have Contributor or Owner role on the subscription
+   - **Script Path Issues**: Run the cleanup script from the project root directory
+
+### Cleanup Troubleshooting
+
+If the cleanup script encounters issues:
+
+1. **Check Azure CLI connectivity**:
+
+   ```bash
+   az account show
+   ```
+
+2. **Verify resource group exists**:
+
+   ```bash
+   az group show --name "your-resource-group"
+   ```
+
+3. **List deployments to find the correct deployment name**:
+
+   ```bash
+   az deployment group list -g "your-resource-group" --query "[].{Name:name, State:properties.provisioningState}"
+   ```
+
+4. **Run cleanup with verbose logging**:
+
+   ```python
+   # Edit cleanup_script.py to add debug output
+   from modules.utils import cleanup_resources, print_info
+   print_info("Debug: Starting cleanup process...")
+   ```
+
+5. **Manual resource inspection**:
+
+   ```bash
+   # List all resources in the group
+   az resource list -g "your-resource-group" -o table
+   ```
+
 ### Support
 
 For infrastructure issues:
@@ -241,6 +404,7 @@ For infrastructure issues:
 1. Check Azure Resource Manager deployment logs
 2. Review the Azure portal for resource-specific errors
 3. Consult Azure documentation for service-specific requirements
+4. For cleanup issues, check the colored output from `utils.py` functions for specific error details
 
 ## 📝 Best Practices
 
