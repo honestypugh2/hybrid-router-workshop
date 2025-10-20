@@ -1,0 +1,28 @@
+using 'main.bicep'
+
+// Basic configuration
+param workloadName = 'hybridllm'
+param environmentName = 'dev'
+param location = 'eastus2'
+
+// API Management configuration
+param apimAdminEmail = 'admin@contoso.com'  // Replace with your email
+param apimOrganizationName = 'Hybrid LLM Router Organization'
+param apimSkuName = 'Developer'
+
+// OpenAI configuration
+param openAiSkuName = 'S0'
+
+// Telemetry configuration
+param enableTelemetry = true
+
+// AI Foundry configuration
+param enableAiFoundry = true
+param enableModelRouting = true
+
+// Resource tags
+param tags = {
+  project: 'hybrid-llm-router'
+  costCenter: 'AI-Research'
+  owner: 'AI-Team'
+}
