@@ -55,7 +55,7 @@ var modelConfigurations = {
   gpt4oMini: {
     name: 'gpt-4o-mini'
     version: '2024-07-18'
-    capacity: 100
+    capacity: 50
   }
   gpt41: {
     name: 'gpt-4.1'

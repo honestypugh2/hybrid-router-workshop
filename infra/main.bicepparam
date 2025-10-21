@@ -2,7 +2,7 @@ using 'main.bicep'
 
 // Environment and naming parameters
 param workloadName = 'hybridllm'
-param environmentName = 'workshop'
+param environmentName = 'poc2'
 param location = 'eastus2'
 
 // Feature toggles
@@ -14,7 +14,7 @@ param openAiSkuName = 'S0'
 
 // API Management Configuration
 param apimSkuName = 'Developer'
-param apimAdminEmail = 'your_email@example.com'
+param apimAdminEmail = 'brittanypugh@microsoft.com'
 param apimOrganizationName = 'Hybrid LLM Router'
 
 // Tags
