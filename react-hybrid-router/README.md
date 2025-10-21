@@ -54,12 +54,14 @@ Key backend dependencies:
 This React app intelligently supports **two backend API patterns**:
 
 ### 🚀 Enhanced Backend (Port 8000)
+
 - **Location**: Root level `backend_api.py`
 - **API Pattern**: `/api/*` endpoints (e.g., `/api/query`, `/api/system-status`)
 - **Features**: Advanced analytics, conversation insights, enhanced context management
 - **Version**: 2.0.0 (Enhanced)
 
 ### ⚡ Basic Backend (Port 8080)
+
 - **Location**: `react-hybrid-router/backend_api.py`
 - **API Pattern**: `/route` endpoints (e.g., `/route`, `/route/bert`)
 - **Features**: Core routing functionality, basic analytics
@@ -68,6 +70,7 @@ This React app intelligently supports **two backend API patterns**:
 ### � Automatic Backend Detection
 
 The React app automatically:
+
 1. **Tests both backends** on startup (ports 8000 and 8080)
 2. **Prioritizes Enhanced backend** (8000) when available
 3. **Falls back to Basic backend** (8080) if Enhanced is unavailable
@@ -75,8 +78,6 @@ The React app automatically:
 5. **Adapts API calls** to match the detected backend pattern
 
 ## �🚀 Quick Start
-
-### Option 1: Use the Startup Scripts (Recommended)
 
 ### Option 1: Use the Startup Scripts (Recommended)
 
