@@ -4,15 +4,37 @@ This directory contains the Azure infrastructure as code (Bicep) templates for d
 
 ## 🚀 Quick Start
 
-### Deploy Infrastructure
+### Deploy Infrastructure with Azure Developer CLI (Recommended)
 
-```bash
+The Azure Developer CLI (azd) provides the best deployment experience with automatic environment management, resource grouping, and modern DevOps practices.
+
+```powershell
+# 1. Initialize azd (first-time setup)
+azd init
+
+# 2. Simple deployment with defaults
+azd up
+
+# 3. Or use our custom deployment scripts
+.\infra\azd-deploy.ps1
+
+# 4. Preview what will be deployed
+azd provision --preview
+```
+
+### Deploy Infrastructure with Azure CLI (Alternative)
+
+```powershell
 .\infra\deploy.ps1 -ResourceGroupName "your-resource-group"
 ```
 
 ### Cleanup Resources
 
-```bash
+```powershell
+# Using azd (recommended)
+azd down
+
+# Using cleanup script
 .venv\Scripts\activate.bat && python scripts/cleanup_script.py
 ```
 
@@ -60,12 +82,114 @@ infra/
 
 ### Prerequisites
 
+**For Azure Developer CLI (azd) - Recommended:**
+1. [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) installed
+2. Azure CLI installed and configured
+3. Appropriate Azure subscription access
+
+**For traditional deployment:**
 1. Azure CLI installed and configured
 2. Bicep CLI installed
 3. Appropriate Azure subscription access
 4. Resource group created
 
-### Option 1: Using the PowerShell Script
+### Option 1: Using Azure Developer CLI (azd) - Recommended ⭐
+
+Azure Developer CLI provides the best deployment experience with automatic environment management, resource grouping, and modern DevOps practices.
+
+#### Step-by-Step azd Deployment
+
+1. **Install Azure Developer CLI** (if not already installed):
+
+   ```powershell
+   # Install via PowerShell
+   powershell -ex AllSigned -c "Invoke-RestMethod 'https://aka.ms/install-azd.ps1' | Invoke-Expression"
+   
+   # Or install via winget
+   winget install microsoft.azd
+   ```
+
+2. **Run the setup script** (recommended for first-time users):
+
+   ```powershell
+   cd c:\Users\brittanypugh\hybrid-llm-router-workshop
+   .\infra\setup-azd.ps1
+   ```
+
+   This script will:
+   - Verify Azure CLI and azd installation
+   - Handle authentication for both tools
+   - Configure your default Azure subscription
+   - Prepare the environment for deployment
+
+3. **Deploy the infrastructure**:
+
+   ```powershell
+   # Preview deployment
+   .\infra\azd-deploy.ps1 -WhatIf
+   
+   # Deploy with defaults
+   .\infra\azd-deploy.ps1
+   
+   # Deploy to specific environment
+   .\infra\azd-deploy.ps1 -EnvironmentName "prod"
+   ```
+
+#### Alternative: Using Custom azd Scripts
+
+We've provided enhanced deployment scripts with additional features:
+
+```powershell
+# Quick deployment with sensible defaults
+.\infra\azd-deploy.ps1
+
+# Preview what will be deployed
+.\infra\azd-deploy.ps1 -WhatIf
+
+# Full-featured deployment with custom options
+.\infra\deploy-azd.ps1 -EnvironmentName "dev" -Location "eastus2"
+
+# Deploy to production environment
+.\infra\deploy-azd.ps1 -EnvironmentName "prod" -Location "westus2" -AdminEmail "admin@company.com"
+
+# Deploy without confirmation prompts
+.\infra\deploy-azd.ps1 -Force
+```
+
+#### azd Environment Management
+
+```powershell
+# List environments
+azd env list
+
+# Select an environment
+azd env select <environment-name>
+
+# Set environment variables
+azd env set APIM_ADMIN_EMAIL "your-email@domain.com"
+azd env set AZURE_LOCATION "eastus2"
+
+# View environment values
+azd env get-values
+
+# Deploy to specific environment
+azd up --environment prod
+```
+
+#### azd Benefits
+
+- ✅ **Automatic Environment Management**: Creates and manages dev/test/prod environments
+- ✅ **Smart Resource Grouping**: Auto-generates resource group names (`rg-hybrid-router-workshop-{env}`)
+- ✅ **Parameter Management**: Environment-specific configuration with variable substitution
+- ✅ **Deployment History**: Built-in tracking, rollback, and state management
+- ✅ **CI/CD Integration**: Ready for GitHub Actions and Azure DevOps pipelines
+- ✅ **Modern CLI Experience**: Better error handling, progress indicators, and user feedback
+- ✅ **Infrastructure as Code**: Full Bicep template support with parameter validation
+- ✅ **Cost Management**: Easy cleanup with `azd down`
+
+### Option 2: Using Azure CLI (Traditional)
+
+#### Using the PowerShell Script
 
 1. **Login to Azure**:
 
@@ -92,7 +216,7 @@ infra/
    .\infra\deploy.ps1 -ResourceGroupName "new-resource-group" -Location "eastus2"
    ```
 
-### Option 2: Manual Deployment
+### Option 3: Manual Deployment
 
 1. **Create a resource group**:
 
@@ -129,7 +253,27 @@ az deployment group create \
 
 ## 🔧 Configuration
 
-### Parameters
+### azd Configuration Files
+
+The project includes the following azd configuration files:
+
+- **`azure.yaml`**: Main azd project configuration
+- **`infra/main.parameters.json`**: Parameter file with environment variable substitution
+
+#### Environment Variables
+
+azd uses environment variables for configuration. Set these before deployment:
+
+```powershell
+# Required
+azd env set APIM_ADMIN_EMAIL "your-email@domain.com"
+
+# Optional (with defaults)
+azd env set AZURE_LOCATION "eastus2"
+azd env set AZURE_ENV_NAME "dev"
+```
+
+### Bicep Parameters
 
 | Parameter | Description | Default | Required |
 |-----------|-------------|---------|----------|
@@ -225,7 +369,25 @@ main.prod.bicepparam
 
 ### Resource Cleanup
 
-#### Option 1: Using the Cleanup Script (Recommended)
+#### Option 1: Using Azure Developer CLI (azd) - Recommended
+
+The simplest way to clean up resources deployed with azd:
+
+```powershell
+# Delete all resources in the current environment
+azd down
+
+# Delete resources and purge soft-deleted services
+azd down --purge
+
+# Force deletion without confirmation
+azd down --force
+
+# Delete specific environment
+azd down --environment prod
+```
+
+#### Option 2: Using the Cleanup Script
 
 The project includes a comprehensive cleanup script that uses the `modules/utils.py` functions to properly clean up Azure resources:
 
@@ -334,6 +496,49 @@ for resource in resources:
 
 ### Common Issues
 
+#### azd-Specific Issues
+
+1. **azd not found**:
+   ```powershell
+   # Install azd
+   winget install microsoft.azd
+   # Or
+   powershell -ex AllSigned -c "Invoke-RestMethod 'https://aka.ms/install-azd.ps1' | Invoke-Expression"
+   ```
+
+2. **Authentication Issues**:
+   ```powershell
+   # Re-authenticate
+   azd auth login
+   
+   # Check auth status
+   azd auth login --check-status
+   ```
+
+3. **Environment Issues**:
+   ```powershell
+   # List environments
+   azd env list
+   
+   # Create new environment
+   azd env new <environment-name>
+   
+   # Reset environment
+   azd env select <environment-name>
+   azd provision
+   ```
+
+4. **Parameter Issues**:
+   ```powershell
+   # Check current environment values
+   azd env get-values
+   
+   # Set missing parameters
+   azd env set APIM_ADMIN_EMAIL "your-email@domain.com"
+   ```
+
+#### General Deployment Issues
+
 1. **Deployment Failures**:
 
    - Check Azure CLI version and authentication
@@ -416,6 +621,12 @@ For infrastructure issues:
 
 ## 🔗 Related Resources
 
+### Azure Developer CLI (azd)
+- [Azure Developer CLI Documentation](https://learn.microsoft.com/azure/developer/azure-developer-cli/)
+- [azd Installation Guide](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
+- [azd Templates and Examples](https://github.com/Azure-Samples/azd-templates)
+
+### Azure Infrastructure
 - [Azure Bicep Documentation](https://docs.microsoft.com/azure/azure-resource-manager/bicep/)
 - [Azure OpenAI Service](https://docs.microsoft.com/azure/cognitive-services/openai/)
 - [Azure API Management](https://docs.microsoft.com/azure/api-management/)

@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: hybrid-router-workshop
+metadata:
+  template: hybrid-router-workshop@0.0.1-beta
+
+# Infrastructure configuration
+infra:
+  provider: bicep
+  path: infra
+
+# Resource group configuration
+resourceGroup: rg-hybrid-router-workshop-${AZURE_ENV_NAME}
+
+# Pipeline configuration for CI/CD
+pipeline:
+  provider: github
+
+# Hooks for pre/post deployment actions
+hooks:
+  postdeploy:
+    shell: pwsh
+    run: |
+      Write-Host "🎉 Deployment completed successfully!" -ForegroundColor Green
+      Write-Host "📋 Getting deployment outputs..." -ForegroundColor Cyan
+      azd env get-values

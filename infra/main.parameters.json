@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workloadName": {
+      "value": "${AZURE_ENV_NAME=hybridllm}"
+    },
+    "environmentName": {
+      "value": "${AZURE_ENV_NAME=dev}"
+    },
+    "location": {
+      "value": "${AZURE_LOCATION=eastus2}"
+    },
+    "enableTelemetry": {
+      "value": true
+    },
+    "enableAiFoundry": {
+      "value": true
+    },
+    "openAiSkuName": {
+      "value": "S0"
+    },
+    "apimSkuName": {
+      "value": "Developer"
+    },
+    "apimAdminEmail": {
+      "value": "${APIM_ADMIN_EMAIL=brittanypugh@microsoft.com}"
+    },
+    "apimOrganizationName": {
+      "value": "Hybrid LLM Router"
+    },
+    "tags": {
+      "value": {
+        "project": "hybrid-router-workshop",
+        "owner": "${AZURE_PRINCIPAL_ID=azd-user}",
+        "environment": "${AZURE_ENV_NAME=dev}"
+      }
+    }
+  }
+}
