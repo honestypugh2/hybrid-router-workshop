@@ -67,7 +67,7 @@ This workshop uses a Windows machine for on-device.
 >
 > Missing prerequisites will cause setup and lab failures. Use the infrastructure deployment guide (`infra/README.md`) to deploy required Azure resources first.
 >
-> NOTE: Infra APIM bicep script currently deploys API's backend using the incorrect format. Please follow Post-Deploymment instructions below.
+> **NOTE: Infra APIM bicep script currently deploys API's backend using the incorrect format. Please follow Post-Deploymment instructions below.**
 
 ## 🛠️ Setup
 
@@ -106,17 +106,17 @@ This workshop uses a Windows machine for on-device.
 
 6. **Add environment to Jupyter kernelspec to use in Notebook**:
 
-Activate the virtual environment if not done so:
+   Activate the virtual environment if not done so:
 
-   ```bash
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
+      ```bash
+      source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+      ```
 
-   ```bash
-   python -m ipykernel install --user --name .venv
-   ```
+      ```bash
+      python -m ipykernel install --user --name .venv
+      ```
 
-   When you open up the lab Notebooks, select Kernel to be the created virtual environment.
+      When you open up the lab Notebooks, select Kernel to be the created virtual environment.
 
 ## 🔧 Post-Deployment Configuration
 
@@ -147,6 +147,19 @@ After deploying infrastructure and models, complete these configuration steps:
 3. Confirm routing functionality
 
 ## 🚀 Quick Demo Scripts
+
+> **⚠️ PREREQUISITES REQUIRED**: Before running any demo scripts, ensure you have:
+>
+> - ✅ **Installed all dependencies** via `pip install -r requirements.txt`
+> - ✅ **Completed infrastructure deployment** (see `infra/README.md`)
+> - ✅ **Verified model deployments** and API endpoints are accessible
+> - ✅ **Configured environment variables** in `.env` file with your Azure credentials
+> - ✅ **Finished Lab 1** (Environment Setup) - Required for basic connectivity
+> - ✅ **Finished Lab 2** (Local Model Testing) - Required for local routing
+> - ✅ **Finished Lab 3** (Azure Model Testing) - Required for cloud routing
+> - ✅ **Finished Remaining Labs from Lab Notebooks Section Below**
+>
+> **Running demos without completing these prerequisites will result in connection errors, authentication failures, or incomplete functionality.**
 
 **📁 All React demo scripts are located in the `react-hybrid-router` directory.**
 
