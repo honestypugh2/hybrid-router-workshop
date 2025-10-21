@@ -19,8 +19,8 @@ from modules.utils import cleanup_resources, print_info, print_warning
 
 def main():
     """Main cleanup function"""
-    deployment_name = "hybrid-llm-router-20251021-132358"  # Most recent deployment
-    resource_group_name = "rg-hybridllm-workshop-poc-test"
+    deployment_name = "hybrid-llm-router-20251021-141124"  # Most recent deployment
+    resource_group_name = "rg-hybridllm-workshop-poc-2"
     
     print_info(f"Starting cleanup for deployment: {deployment_name}")
     print_info(f"Resource group: {resource_group_name}")

@@ -200,7 +200,7 @@ class EnhancedHybridRouterAPI:
             else:
                 full_query = query
                 
-            response_text = self.hybrid_router.route(full_query, show_reasoning=False)
+            response_text = self.hybrid_router.route(full_query, show_reasoning=True)
             
             # Extract source from response tags
             source = "hybrid"

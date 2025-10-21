@@ -2,7 +2,7 @@ using 'main.bicep'
 
 // Environment and naming parameters
 param workloadName = 'hybridllm'
-param environmentName = 'poc2'
+param environmentName = 'poc-dev'
 param location = 'eastus2'
 
 // Feature toggles
