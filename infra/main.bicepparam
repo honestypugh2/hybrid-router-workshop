@@ -14,11 +14,11 @@ param openAiSkuName = 'S0'
 
 // API Management Configuration
 param apimSkuName = 'Developer'
-param apimAdminEmail = 'brittanypugh@microsoft.com'
+param apimAdminEmail = 'your_email@example.com'
 param apimOrganizationName = 'Hybrid LLM Router'
 
 // Tags
 param tags = {
   project: 'hybrid-llm-router-workshop'
-  owner: 'brittanypugh'
+  owner: 'your_name'
 }
