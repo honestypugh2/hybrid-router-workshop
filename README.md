@@ -66,6 +66,8 @@ This workshop uses a Windows machine for on-device.
 > - ✅ Network connectivity verified between all services
 >
 > Missing prerequisites will cause setup and lab failures. Use the infrastructure deployment guide (`infra/README.md`) to deploy required Azure resources first.
+>
+> NOTE: Infra APIM bicep script currently deploys API's backend using the incorrect format. Please follow Post-Deploymment instructions below.
 
 ## 🛠️ Setup
 
@@ -101,6 +103,20 @@ This workshop uses a Windows machine for on-device.
    ```bash
    az login
    ```
+
+6. **Add environment to Jupyter kernelspec to use in Notebook**:
+
+Activate the virtual environment if not done so:
+
+   ```bash
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+   ```bash
+   python -m ipykernel install --user --name .venv
+   ```
+
+   When you open up the lab Notebooks, select Kernel to be the created virtual environment.
 
 ## 🔧 Post-Deployment Configuration
 
@@ -158,6 +174,7 @@ npm run demo-python     # Python startup
 ```
 
 **From project root, use the helper scripts:**
+
 ```bash
 # Windows - Helper script that navigates to react-hybrid-router
 .\start_demos.bat
