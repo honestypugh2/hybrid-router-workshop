@@ -2,6 +2,28 @@
 
 This directory contains the Azure infrastructure as code (Bicep) templates for deploying the hybrid LLM router workshop resources.
 
+## ⚙️ Prerequisites
+
+Before deploying, you must update the configuration files with your email address for Azure API Management (APIM):
+
+1. **Update `main.bicepparam`** (for Azure CLI deployment):
+
+   ```bicep
+   param apimAdminEmail = 'your-email@domain.com'  // Replace with your email
+   ```
+
+2. **Update `main.parameters.json`** (for Azure Developer CLI deployment):
+
+   ```json
+   {
+     "APIM_ADMIN_EMAIL": {
+       "value": "your-email@domain.com"  // Replace with your email
+     }
+   }
+   ```
+
+⚠️ **Important**: The APIM admin email is required for deployment and cannot be left empty.
+
 ## 🚀 Quick Start
 
 ### Deploy Infrastructure with Azure Developer CLI (Recommended)
