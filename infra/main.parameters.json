@@ -24,7 +24,7 @@
       "value": "Developer"
     },
     "apimAdminEmail": {
-      "value": "${APIM_ADMIN_EMAIL=brittanypugh@microsoft.com}"
+      "value": "${APIM_ADMIN_EMAIL=your_email@microsoft.com}"
     },
     "apimOrganizationName": {
       "value": "Hybrid LLM Router"
