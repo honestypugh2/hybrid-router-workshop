@@ -4,25 +4,61 @@ This directory contains the Azure infrastructure as code (Bicep) templates for d
 
 ## ⚙️ Prerequisites
 
-Before deploying, you must update the configuration files with your email address for Azure API Management (APIM):
+Before deploying, you must configure environment variables for the deployment. Both parameter files now use environment variables instead of hardcoded values.
 
-1. **Update `main.bicepparam`** (for Azure CLI deployment):
+### Option 1: Set Environment Variables Directly
 
-   ```bicep
-   param apimAdminEmail = 'your-email@domain.com'  // Replace with your email
+Set the required environment variable for APIM:
+
+```powershell
+# Required: APIM Admin Email
+$env:APIM_ADMIN_EMAIL = "your-email@domain.com"
+
+# Optional: Override defaults
+$env:AZURE_LOCATION = "eastus2"
+$env:ENVIRONMENT_NAME = "dev"
+$env:WORKLOAD_NAME = "hybridllm"
+```
+
+### Option 2: Use Environment File (Recommended)
+
+1. **Copy the sample environment file**:
+
+   ```powershell
+   copy infra\.env.sample infra\.env
    ```
 
-2. **Update `main.parameters.json`** (for Azure Developer CLI deployment):
+2. **Edit `infra\.env`** with your values:
 
-   ```json
-   {
-     "APIM_ADMIN_EMAIL": {
-       "value": "your-email@domain.com"  // Replace with your email
+   ```bash
+   APIM_ADMIN_EMAIL=your-email@domain.com
+   AZURE_LOCATION=eastus2
+   ENVIRONMENT_NAME=dev
+   WORKLOAD_NAME=hybridllm
+   ```
+
+3. **Load environment variables** (for Azure CLI deployment):
+
+   ```powershell
+   # Load .env file (requires dotenv or manual loading)
+   Get-Content infra\.env | ForEach-Object {
+     if ($_ -match "^([^#][^=]+)=(.*)$") {
+       [Environment]::SetEnvironmentVariable($matches[1], $matches[2], "Process")
      }
    }
    ```
 
-⚠️ **Important**: The APIM admin email is required for deployment and cannot be left empty.
+### For Azure Developer CLI (azd)
+
+azd automatically handles environment variables. Just set them directly:
+
+```powershell
+azd env set APIM_ADMIN_EMAIL "your-email@domain.com"
+azd env set AZURE_LOCATION "eastus2"
+azd env set ENVIRONMENT_NAME "dev"
+```
+
+⚠️ **Important**: `APIM_ADMIN_EMAIL` is required and must be set before deployment.
 
 ## 🚀 Quick Start
 

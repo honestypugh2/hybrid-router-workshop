@@ -1,24 +1,25 @@
 using 'main.bicep'
 
 // Environment and naming parameters
-param workloadName = 'hybridllm'
-param environmentName = 'poc-dev'
-param location = 'eastus2'
+param workloadName = readEnvironmentVariable('WORKLOAD_NAME', 'hybridllm')
+param environmentName = readEnvironmentVariable('ENVIRONMENT_NAME', 'poc-dev')
+param location = readEnvironmentVariable('AZURE_LOCATION', 'eastus2')
 
 // Feature toggles
-param enableTelemetry = true
-param enableAiFoundry = true
+param enableTelemetry = bool(readEnvironmentVariable('ENABLE_TELEMETRY', 'true'))
+param enableAiFoundry = bool(readEnvironmentVariable('ENABLE_AI_FOUNDRY', 'true'))
 
 // Azure OpenAI Configuration
-param openAiSkuName = 'S0'
+param openAiSkuName = readEnvironmentVariable('OPENAI_SKU_NAME', 'S0')
 
 // API Management Configuration
-param apimSkuName = 'Developer'
-param apimAdminEmail = 'your_email@microsoft.com'
-param apimOrganizationName = 'Hybrid LLM Router'
+param apimSkuName = readEnvironmentVariable('APIM_SKU_NAME', 'Developer')
+param apimAdminEmail = readEnvironmentVariable('APIM_ADMIN_EMAIL', '')
+param apimOrganizationName = readEnvironmentVariable('APIM_ORGANIZATION_NAME', 'Hybrid LLM Router')
 
 // Tags
 param tags = {
   project: 'hybrid-llm-router-workshop'
-  owner: 'your_name'
+  owner: readEnvironmentVariable('AZURE_PRINCIPAL_ID', 'azd-user')
+  environment: readEnvironmentVariable('ENVIRONMENT_NAME', 'poc-dev')
 }

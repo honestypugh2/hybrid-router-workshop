@@ -3,37 +3,37 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "workloadName": {
-      "value": "${AZURE_ENV_NAME=hybridllm}"
+      "value": "${WORKLOAD_NAME=hybridllm}"
     },
     "environmentName": {
-      "value": "${AZURE_ENV_NAME=dev}"
+      "value": "${ENVIRONMENT_NAME=dev}"
     },
     "location": {
       "value": "${AZURE_LOCATION=eastus2}"
     },
     "enableTelemetry": {
-      "value": true
+      "value": "${ENABLE_TELEMETRY=true}"
     },
     "enableAiFoundry": {
-      "value": true
+      "value": "${ENABLE_AI_FOUNDRY=true}"
     },
     "openAiSkuName": {
-      "value": "S0"
+      "value": "${OPENAI_SKU_NAME=S0}"
     },
     "apimSkuName": {
-      "value": "Developer"
+      "value": "${APIM_SKU_NAME=Developer}"
     },
     "apimAdminEmail": {
-      "value": "${APIM_ADMIN_EMAIL=your_email@microsoft.com}"
+      "value": "${APIM_ADMIN_EMAIL}"
     },
     "apimOrganizationName": {
-      "value": "Hybrid LLM Router"
+      "value": "${APIM_ORGANIZATION_NAME=Hybrid LLM Router}"
     },
     "tags": {
       "value": {
         "project": "hybrid-router-workshop",
         "owner": "${AZURE_PRINCIPAL_ID=azd-user}",
-        "environment": "${AZURE_ENV_NAME=dev}"
+        "environment": "${ENVIRONMENT_NAME=dev}"
       }
     }
   }
