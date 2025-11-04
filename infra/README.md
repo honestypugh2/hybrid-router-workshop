@@ -131,21 +131,72 @@ infra/
 │   ├── log-analytics.bicep     # Log Analytics workspace
 │   ├── openai.bicep           # Azure OpenAI service with multiple models
 │   ├── role-assignment.bicep  # Role assignment module
-│   └── utils.py               # Azure utility functions for deployment and cleanup
+│   ├── utils.py               # Azure utility functions for deployment and cleanup
+│   └── specs/                 # OpenAPI specifications for APIM
+│       ├── azureaifoundry.json      # Azure AI Foundry API specification
+│       ├── azureaifoundryopenai.json # Azure OpenAI API specification
+│       └── passthrough.json         # Passthrough API specification
 └── scripts/
     └── cleanup_script.py      # Automated resource cleanup script
 ```
+
+## 📄 OpenAPI Specifications
+
+The `infra/modules/specs/` directory contains OpenAPI specification files that define the API contracts for Azure API Management (APIM). These specifications ensure that APIM properly routes requests and validates API calls to backend services.
+
+### Specification Files
+
+#### `azureaifoundry.json`
+
+- **Purpose**: Official Azure AI Foundry API specification
+- **Base URL**: `https://{endpoint}.services.ai.azure.com/models`
+- **Endpoints**:
+  - `/chat/completions` - Chat completions for conversational AI
+  - `/embeddings` - Text embedding generation
+  - `/images/embeddings` - Image embedding generation  
+  - `/images/generations` - AI image generation
+  - `/info` - Model information and capabilities
+- **Usage**: Referenced by `apim.bicep` via `loadJsonContent('./specs/azureaifoundry.json')`
+- **Authentication**: Supports API Key, Bearer Token, and OAuth2
+
+#### `azureaifoundryopenai.json`
+
+- **Purpose**: Official Azure OpenAI Service API specification
+- **Base URL**: `https://{endpoint}/openai`
+- **Endpoints**:
+  - `/deployments/{deployment-id}/completions` - Text completions
+  - `/deployments/{deployment-id}/chat/completions` - Chat completions
+  - `/deployments/{deployment-id}/embeddings` - Embeddings
+  - And many other Azure OpenAI endpoints
+- **Usage**: Referenced by `apim.bicep` via `loadJsonContent('./specs/azureaifoundryopenai.json')`
+- **Authentication**: API Key and Bearer Token authentication
+
+#### `passthrough.json`
+
+- **Purpose**: Generic passthrough API specification for custom routing
+- **Usage**: Allows APIM to pass requests through to backend services without strict validation
+- **Flexibility**: Supports dynamic routing scenarios and custom API endpoints
+
+### Benefits of Using Official Specifications
+
+✅ **API Compliance**: Ensures APIM uses official Azure API contracts and paths  
+✅ **Automatic Validation**: Request/response validation based on Azure specifications  
+✅ **Future-Proof**: Automatically supports new endpoints and parameters as Azure services evolve  
+✅ **Developer Experience**: Provides accurate API documentation and IntelliSense in Azure portal  
+✅ **Consistent Routing**: Proper path mapping ensures requests reach the correct backend endpoints
 
 ## 🚀 Deployment
 
 ### Prerequisites
 
 **For Azure Developer CLI (azd) - Recommended:**
+
 1. [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) installed
 2. Azure CLI installed and configured
 3. Appropriate Azure subscription access
 
 **For traditional deployment:**
+
 1. Azure CLI installed and configured
 2. Bicep CLI installed
 3. Appropriate Azure subscription access
@@ -490,7 +541,7 @@ The project includes a comprehensive cleanup script that uses the `modules/utils
 
 5. **Confirm deletion** when prompted:
 
-   ```
+   ```text
    Are you sure you want to proceed? (yes/no): yes
    ```
 
@@ -557,6 +608,7 @@ for resource in resources:
 #### azd-Specific Issues
 
 1. **azd not found**:
+
    ```powershell
    # Install azd
    winget install microsoft.azd
@@ -565,6 +617,7 @@ for resource in resources:
    ```
 
 2. **Authentication Issues**:
+
    ```powershell
    # Re-authenticate
    azd auth login
@@ -574,6 +627,7 @@ for resource in resources:
    ```
 
 3. **Environment Issues**:
+
    ```powershell
    # List environments
    azd env list
@@ -587,6 +641,7 @@ for resource in resources:
    ```
 
 4. **Parameter Issues**:
+
    ```powershell
    # Check current environment values
    azd env get-values
@@ -680,11 +735,13 @@ For infrastructure issues:
 ## 🔗 Related Resources
 
 ### Azure Developer CLI (azd)
+
 - [Azure Developer CLI Documentation](https://learn.microsoft.com/azure/developer/azure-developer-cli/)
 - [azd Installation Guide](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
 - [azd Templates and Examples](https://github.com/Azure-Samples/azd-templates)
 
 ### Azure Infrastructure
+
 - [Azure Bicep Documentation](https://docs.microsoft.com/azure/azure-resource-manager/bicep/)
 - [Azure OpenAI Service](https://docs.microsoft.com/azure/cognitive-services/openai/)
 - [Azure API Management](https://docs.microsoft.com/azure/api-management/)

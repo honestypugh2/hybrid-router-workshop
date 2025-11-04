@@ -107,7 +107,7 @@ resource aiFoundryBackend 'Microsoft.ApiManagement/service/backends@2023-09-01-p
   name: 'ai-foundry-backend'
   properties: {
     description: 'Azure AI Foundry Project Backend'
-    url: aiFoundryProjectEndpoint
+    url: '${aiFoundryProjectEndpoint}/models'
     protocol: 'http'
     circuitBreaker: {
       rules: [
@@ -149,46 +149,7 @@ resource openAiApi 'Microsoft.ApiManagement/service/apis@2023-09-01-preview' = {
     serviceUrl: 'https://${openAiServiceName}.openai.azure.com'
     subscriptionRequired: true
     format: 'openapi+json'
-    value: '''
-    {
-      "openapi": "3.0.1",
-      "info": {
-        "title": "OpenAI API",
-        "version": "1.0"
-      },
-      "paths": {
-        "/openai/deployments/{deployment-id}/chat/completions": {
-          "post": {
-            "operationId": "chatCompletions",
-            "parameters": [
-              {
-                "name": "deployment-id",
-                "in": "path",
-                "required": true,
-                "schema": {
-                  "type": "string"
-                }
-              }
-            ],
-            "requestBody": {
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object"
-                  }
-                }
-              }
-            },
-            "responses": {
-              "200": {
-                "description": "Success"
-              }
-            }
-          }
-        }
-      }
-    }
-    '''
+    value: string(loadJsonContent('./specs/azureaifoundryopenai.json'))
   }
 }
 
@@ -201,80 +162,10 @@ resource aiFoundryApi 'Microsoft.ApiManagement/service/apis@2023-09-01-preview' 
     description: 'Azure AI Foundry Project API for multi-model access'
     path: 'ai-foundry'
     protocols: ['https']
-    serviceUrl: aiFoundryProjectEndpoint
+    serviceUrl: '${aiFoundryProjectEndpoint}/models'
     subscriptionRequired: true
     format: 'openapi+json'
-    value: '''
-    {
-      "openapi": "3.0.1",
-      "info": {
-        "title": "AI Foundry Project API",
-        "version": "1.0"
-      },
-      "paths": {
-        "/openai/deployments/{deployment-id}/chat/completions": {
-          "post": {
-            "operationId": "aiFoundryChatCompletions",
-            "parameters": [
-              {
-                "name": "deployment-id",
-                "in": "path",
-                "required": true,
-                "schema": {
-                  "type": "string",
-                  "enum": ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "model-router"]
-                }
-              }
-            ],
-            "requestBody": {
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object"
-                  }
-                }
-              }
-            },
-            "responses": {
-              "200": {
-                "description": "Success"
-              }
-            }
-          }
-        },
-        "/openai/deployments/{deployment-id}/embeddings": {
-          "post": {
-            "operationId": "aiFoundryEmbeddings",
-            "parameters": [
-              {
-                "name": "deployment-id",
-                "in": "path",
-                "required": true,
-                "schema": {
-                  "type": "string",
-                  "enum": ["text-embedding-ada-002"]
-                }
-              }
-            ],
-            "requestBody": {
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object"
-                  }
-                }
-              }
-            },
-            "responses": {
-              "200": {
-                "description": "Success"
-              }
-            }
-          }
-        }
-      }
-    }
-    '''
+    value: string(loadJsonContent('./specs/azureaifoundry.json'))
   }
 }
 
@@ -379,3 +270,6 @@ output aiFoundrySubscriptionId string = aiFoundryProjectEndpoint != '' ? aiFound
 
 @description('The AI Foundry API endpoint through APIM.')
 output aiFoundryApiEndpoint string = aiFoundryProjectEndpoint != '' ? '${apimService.properties.gatewayUrl}/ai-foundry' : ''
+
+@description('The OpenAI API endpoint through APIM.')
+output openAiApiEndpoint string = '${apimService.properties.gatewayUrl}/openai'
