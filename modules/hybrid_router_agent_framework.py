@@ -71,7 +71,7 @@ try:
     from agent_framework import ChatAgent
     from agent_framework.azure import AzureAIAgentClient
     from azure.ai.projects.aio import AIProjectClient
-    from azure.identity.aio import AzureCliCredential, DefaultAzureCredential
+    from azure.identity.aio import DefaultAzureCredential
     AGENT_FRAMEWORK_AVAILABLE = True
 except ImportError:
     AGENT_FRAMEWORK_AVAILABLE = False
@@ -441,7 +441,7 @@ class HybridAgentRouter:
             agent_instructions = instructions or self.config.agent_default_instructions
             
             async with (
-                AzureCliCredential() as credential,
+                DefaultAzureCredential() as credential,
                 AzureAIAgentClient(
                     project_endpoint=self.config.agent_project_endpoint,
                     model_deployment_name=self.config.agent_model_deployment,
