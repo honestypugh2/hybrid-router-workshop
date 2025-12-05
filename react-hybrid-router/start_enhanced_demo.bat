@@ -50,14 +50,12 @@ echo 🌟 Starting servers...
 echo.
 
 REM Start FastAPI backend in background
-cd ..
-start "FastAPI Backend" cmd /k ".venv\Scripts\activate.bat && python backend_api.py"
+start "FastAPI Backend" cmd /k "cd .. && .venv\Scripts\activate.bat && cd react-hybrid-router && python -m uvicorn backend_api:app --reload --host 0.0.0.0 --port 8000"
 
 REM Wait a moment for backend to start
-timeout /t 3 /nobreak >nul
+timeout /t 5 /nobreak >nul
 
-REM Start React frontend
-cd react-hybrid-router
+REM Start React frontend (we're already in react-hybrid-router directory)
 start "React Frontend" cmd /k "npm start"
 
 echo.

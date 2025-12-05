@@ -24,9 +24,9 @@ load_dotenv()
 @dataclass
 class BertRouterConfig:
     """Configuration for the BERT-based router."""
-    model_path: str = os.environ["BERT_MODEL_PATH"]
-    max_length: int = int(os.environ["BERT_MAX_SEQUENCE_LENGTH"])
-    confidence_threshold: float = float(os.environ["BERT_CONFIDENCE_THRESHOLD"])
+    model_path: str = os.environ.get("BERT_MODEL_PATH", "./notebooks/mobilbert_query_router_trained")
+    max_length: int = int(os.environ.get("BERT_MAX_SEQUENCE_LENGTH", "128"))
+    confidence_threshold: float = float(os.environ.get("BERT_CONFIDENCE_THRESHOLD", "0.7"))
     device: Optional[str] = None
 
 

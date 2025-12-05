@@ -78,6 +78,10 @@ class ConversationManager:
             'total_exchanges': 0,
             'local_responses': 0,
             'cloud_responses': 0,
+            'apim_responses': 0,
+            'foundry_responses': 0,
+            'azure_responses': 0,
+            'mock_responses': 0,
             'model_switches': 0,
             'start_time': datetime.now(),
             'last_model_used': None,
@@ -410,6 +414,10 @@ class ConversationManager:
             'total_exchanges': 0,
             'local_responses': 0,
             'cloud_responses': 0,
+            'apim_responses': 0,
+            'foundry_responses': 0,
+            'azure_responses': 0,
+            'mock_responses': 0,
             'model_switches': 0,
             'start_time': datetime.now(),
             'last_model_used': None,
@@ -571,7 +579,6 @@ class ConversationContextManager(ConversationManager):
             'azure_responses': 0,
             'mock_responses': 0,
             'fallback_uses': 0,
-            'session_start': datetime.now(),
         })
         
         print(f"🗣️ ConversationContextManager initialized for session: {self.session_id}")
@@ -727,7 +734,7 @@ class ConversationContextManager(ConversationManager):
             return {"message": "No conversation history available"}
         
         # Calculate session duration
-        session_duration = datetime.now() - self.conversation_stats['session_start']
+        session_duration = datetime.now() - self.conversation_stats['start_time']
         
         # Analyze routing patterns
         total = self.conversation_stats['total_exchanges']
@@ -779,13 +786,43 @@ class ConversationContextManager(ConversationManager):
             'model_switches': 0,
             'fallback_uses': 0,
             'start_time': datetime.now(),
-            'session_start': datetime.now(),
             'last_model_used': None,
             'total_tokens_estimated': 0,
             'average_response_time': 0.0,
             'errors_count': 0
         }
         print(f"🧹 Conversation cleared for session {self.session_id}")
+    
+    async def to_agent_thread(self, agent) -> Any:
+        """
+        Convert conversation history to Agent Framework thread.
+        Useful for migrating existing conversations to Agent Framework.
+        
+        This method enables transition from custom conversation management
+        to Agent Framework native thread-based persistence.
+        
+        Args:
+            agent: Agent Framework agent instance
+            
+        Returns:
+            AgentThread object with conversation history
+        """
+        try:
+            # Create new thread
+            thread = agent.get_new_thread()
+            
+            # Replay conversation into thread
+            for msg in self.conversation_history:
+                if msg.role == MessageRole.USER:
+                    # Run user messages through agent to build thread
+                    await agent.run(msg.content, thread=thread)
+            
+            print(f"✅ Converted {len(self.conversation_history)} messages to Agent Framework thread")
+            return thread
+            
+        except Exception as e:
+            print(f"❌ Failed to convert to agent thread: {e}")
+            return None
     
     def export_conversation(self, filename: str = None) -> str:
         """Export conversation to JSON file in lab5 format."""
@@ -795,7 +832,7 @@ class ConversationContextManager(ConversationManager):
         export_data = {
             'session_info': {
                 'session_id': self.session_id,
-                'start_time': self.conversation_stats['session_start'].isoformat(),
+                'start_time': self.conversation_stats['start_time'].isoformat(),
                 'export_time': datetime.now().isoformat(),
                 'total_exchanges': len(self.chat_history)
             },

@@ -5,7 +5,12 @@ This module provides a comprehensive three-tier hybrid routing system that intel
 routes queries between Local models (Foundry Local), Azure API Management (APIM) Model Router,
 and Azure AI Foundry Agents based on query complexity and enterprise requirements.
 
-NEW: Now includes ConversationContextManager integration for:
+NEW: Now uses the new Foundry Agent Service API (responses.create with conversations)
+- Modern API with better performance and reliability
+- Simplified agent interaction pattern
+- Enhanced conversation management
+
+ConversationContextManager integration:
 - Session-based conversation management
 - Multi-turn context preservation across routing decisions
 - Enhanced metadata and analytics
@@ -67,10 +72,10 @@ try:
 except ImportError:
     PHI_AVAILABLE = False
 
-# Optional Azure AI Foundry Agents
+# Optional Azure AI Foundry Agents (new Foundry Agent Service API)
 try:
     from azure.ai.projects import AIProjectClient
-    from azure.ai.agents.models import MessageRole, RunStatus
+    from azure.ai.projects.models import PromptAgentDefinition
     from azure.identity import DefaultAzureCredential
     FOUNDRY_AGENTS_AVAILABLE = True
 except ImportError:
@@ -198,12 +203,34 @@ class HybridFoundryAPIMRouter:
             except Exception as e:
                 print(f"⚠️ APIM client failed: {e}")
         
-        # Azure AI Foundry client
+        # Azure AI Foundry client with endpoint validation
         if FOUNDRY_AGENTS_AVAILABLE and self.config.foundry_endpoint:
             try:
+                # Validate and fix endpoint URL
+                foundry_endpoint = self.config.foundry_endpoint
+                
+                # Clean up endpoint (remove comments, quotes, fix double https)
+                foundry_endpoint = foundry_endpoint.split('#')[0].strip()
+                foundry_endpoint = foundry_endpoint.strip('"\'')
+                
+                # Fix double https issue
+                if foundry_endpoint.count('https://') > 1:
+                    second_https = foundry_endpoint.find('https://', foundry_endpoint.find('https://') + 1)
+                    if second_https != -1:
+                        foundry_endpoint = foundry_endpoint[second_https:]
+                
+                # Ensure HTTPS for bearer token authentication
+                if foundry_endpoint.startswith('http://'):
+                    foundry_endpoint = foundry_endpoint.replace('http://', 'https://')
+                elif not foundry_endpoint.startswith('https://'):
+                    foundry_endpoint = f"https://{foundry_endpoint}"
+                
+                # Update config with cleaned endpoint
+                self.config.foundry_endpoint = foundry_endpoint
+                
                 credential = DefaultAzureCredential()
                 self.project_client = AIProjectClient(
-                    endpoint=self.config.foundry_endpoint,
+                    endpoint=foundry_endpoint,
                     credential=credential
                 )
                 print("✅ Azure AI Foundry client initialized")
@@ -223,7 +250,7 @@ class HybridFoundryAPIMRouter:
                 print(f"⚠️ Azure OpenAI client failed: {e}")
     
     def _init_foundry_agent(self):
-        """Initialize Foundry Agent if available."""
+        """Initialize Foundry Agent using new Foundry Agent Service API."""
         if self.project_client and self.config.azure_deployment:
             try:
                 agent_instructions = """
@@ -238,15 +265,19 @@ class HybridFoundryAPIMRouter:
                 Provide clear, comprehensive responses while being efficient.
                 """
                 
-                self.foundry_agent = self.project_client.agents.create_agent(
-                    model=self.config.azure_deployment,
-                    name="Hybrid-Router-Agent",
-                    instructions=agent_instructions.strip(),
-                    description="Specialized agent for complex queries in hybrid AI system"
+                # Use new Foundry Agent Service API
+                self.foundry_agent = self.project_client.agents.create_version(
+                    agent_name="Hybrid-Router-Agent",
+                    definition=PromptAgentDefinition(
+                        model=self.config.azure_deployment,
+                        instructions=agent_instructions.strip()
+                    )
                 )
                 
-                self.agent_thread = self.project_client.agents.threads.create()
-                print("✅ Foundry Agent created")
+                # Create conversation thread using new API
+                ai_openai_client = self.project_client.get_openai_client()
+                self.agent_thread = ai_openai_client.conversations.create()
+                print("✅ Foundry Agent created (new API)")
                 
             except Exception as e:
                 print(f"⚠️ Failed to create Foundry Agent: {e}")
@@ -470,56 +501,37 @@ class HybridFoundryAPIMRouter:
             return f"APIM Model Router error: {str(e)}", 0, False
     
     def query_foundry_agent(self, prompt: str) -> Tuple[str, float, bool]:
-        """Query Azure AI Foundry Agent."""
+        """Query Azure AI Foundry Agent using new Foundry Agent Service API."""
         if not self.foundry_agent or not self.agent_thread:
             return "Foundry Agent not available", 0, False
         
         try:
             start_time = time.time()
             
-            # Add message to thread
-            message = self.project_client.agents.messages.create(
-                thread_id=self.agent_thread.id,
-                role=MessageRole.USER,
-                content=prompt
-            )
+            # Get the OpenAI client from project_client for conversations API
+            ai_openai_client = self.project_client.get_openai_client()
             
-            # Create and execute run
-            run = self.project_client.agents.runs.create_and_process(
-                thread_id=self.agent_thread.id,
-                agent_id=self.foundry_agent.id
+            # Chat with the agent using responses.create (new Foundry Agent Service API)
+            response = ai_openai_client.responses.create(
+                conversation=self.agent_thread.id,
+                extra_body={
+                    "agent": {
+                        "name": self.foundry_agent.name,
+                        "type": "agent_reference"
+                    }
+                },
+                input=prompt
             )
-            
-            # Wait for completion
-            while run.status in [RunStatus.IN_PROGRESS, RunStatus.QUEUED]:
-                time.sleep(0.5)
-                run = self.project_client.agents.runs.get(thread_id=self.agent_thread.id, run_id=run.id)
             
             end_time = time.time()
             
-            if run.status == RunStatus.COMPLETED:
-                messages = self.project_client.agents.messages.list(thread_id=self.agent_thread.id)
-   
-                # Convert ItemPaged to list and get the most recent message
-                message_list = list(messages)
-                if message_list:
-                    latest_message = message_list[0]  # Most recent message
-                    
-                    if latest_message.role == MessageRole.ASSISTANT:
-                        # Handle different content types
-                        if hasattr(latest_message.content[0], 'text'):
-                            content = latest_message.content[0].text.value
-                        else:
-                            content = str(latest_message.content[0])
-                        return content, end_time - start_time, True
-                    else:
-                        return "No assistant response found", end_time - start_time, False
-                else:
-                    return "No messages found in thread", end_time - start_time, False
-            # else:
-            #     return f"Agent failed with status: {run.status}", end_time - start_time, False
+            # Extract the response text
+            if hasattr(response, 'output_text'):
+                content = response.output_text
+            else:
+                content = str(response)
             
-            return f"Agent run failed: {run.status}", end_time - start_time, False
+            return content, end_time - start_time, True
                 
         except Exception as e:
             return f"Foundry Agent error: {str(e)}", 0, False
