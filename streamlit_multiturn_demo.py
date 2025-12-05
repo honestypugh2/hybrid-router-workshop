@@ -20,11 +20,12 @@ if project_root not in sys.path:
 
 # Try to import hybrid router and context manager
 try:
-    from modules.hybrid_router import HybridFoundryAPIMRouter, HybridRouterConfig, create_hybrid_router_from_env
+    from modules.hybrid_router_agent_framework import HybridAgentRouter, HybridAgentRouterConfig, create_hybrid_agent_router_from_env
     from modules.context_manager import ConversationContextManager
     router_available = True
-except ImportError:
+except ImportError as e:
     router_available = False
+    print(f"Warning: Agent Framework hybrid router modules not available: {e}")
 
 # Try to import additional routing modules
 try:
@@ -77,21 +78,22 @@ class StreamlitMultiTurnDemo:
                 
                 f = io.StringIO()
                 with contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
-                    # Create router without session_id since ConversationContextManager integration was removed
-                    self.router = create_hybrid_router_from_env()
+                    # Create Agent Framework router with session ID
+                    self.router = create_hybrid_agent_router_from_env(session_id=self.context_manager.session_id)
                 
                 if self.router:
-                    print(f"✅ Hybrid router initialized for session: {self.context_manager.session_id}")
+                    print(f"✅ Agent Framework hybrid router initialized for session: {self.context_manager.session_id}")
+                    print(f"   Router type: HybridAgentRouter with Azure AI Foundry integration")
                     self.available_routers['hybrid'] = True
                     return True
                 else:
-                    print("⚠️ Router creation failed")
+                    print("⚠️ Agent Framework router creation failed")
                     self.available_routers['hybrid'] = False
                     return False
                     
             except Exception as e:
                 # Don't use st.error here as it might not be available during init
-                print(f"Hybrid router initialization failed: {e}")
+                print(f"Agent Framework hybrid router initialization failed: {e}")
                 self.available_routers['hybrid'] = False
                 return False
         
@@ -129,8 +131,95 @@ class StreamlitMultiTurnDemo:
             self.phi_router = None
             self.available_routers['phi'] = False
     
+    async def route_with_selected_strategy_async(self, query: str) -> Tuple[str, str, float, Dict]:
+        """Route query using selected strategy with async support."""
+        start_time = time.time()
+        
+        if not self.router:
+            # Generate mock response without router
+            response_time = time.time() - start_time
+            mock_response, source = self._generate_contextual_mock_response(query)
+            
+            metadata = {
+                'strategy': 'mock',
+                'target': source,
+                'confidence': 0.5,
+                'reason': 'Router not available',
+                'source': source,
+                'response_time': response_time,
+                'success': True,
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            
+            return mock_response, source, response_time, metadata
+        
+        try:
+            # Use Agent Framework async routing with context
+            has_context = len(self.context_manager.chat_history) > 0
+            
+            # Route using Agent Framework (async)
+            result = await self.router.route_async(
+                query=query,
+                use_context=has_context,
+                show_reasoning=False
+            )
+            
+            response = result.get('response', '')
+            actual_source = result.get('source', 'unknown')
+            response_time = result.get('metadata', {}).get('response_time', time.time() - start_time)
+            
+            # Extract metadata from Agent Framework result
+            routing_metadata = result.get('metadata', {})
+            routing_info = routing_metadata.get('routing_info', {})
+            
+            metadata = {
+                'strategy': self.selected_strategy,
+                'target': routing_info.get('target', actual_source),
+                'confidence': routing_info.get('confidence', 0.0),
+                'reason': routing_info.get('reason', 'Agent Framework routing'),
+                'source': actual_source,
+                'response_time': response_time,
+                'success': result.get('success', True),
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'analysis': routing_info.get('analysis', {})
+            }
+            
+            return response, actual_source, response_time, metadata
+            
+        except Exception as e:
+            response_time = time.time() - start_time
+            error_msg = f"Error processing request: {str(e)}"
+            
+            metadata = {
+                'strategy': 'error',
+                'target': 'error',
+                'confidence': 0.0,
+                'reason': f'Routing error: {str(e)}',
+                'source': 'error',
+                'response_time': response_time,
+                'success': False,
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            
+            return error_msg, "error", response_time, metadata
+    
     def route_with_selected_strategy(self, query: str) -> Tuple[str, str, float, Dict]:
-        """Route query using selected strategy and generate response."""
+        """Route query using selected strategy (sync wrapper for backward compatibility)."""
+        import asyncio
+        try:
+            # Try to use existing event loop
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If in async context, just call async version
+                return asyncio.run(self.route_with_selected_strategy_async(query))
+            else:
+                return loop.run_until_complete(self.route_with_selected_strategy_async(query))
+        except RuntimeError:
+            # No event loop, create one
+            return asyncio.run(self.route_with_selected_strategy_async(query))
+    
+    def _route_with_selected_strategy_sync_fallback(self, query: str) -> Tuple[str, str, float, Dict]:
+        """Original synchronous routing logic as fallback."""
         start_time = time.time()
         
         if not self.router:
@@ -244,36 +333,47 @@ class StreamlitMultiTurnDemo:
             return 'cloud', f'Routing error: {str(e)[:50]}', 0.5
     
     def process_conversation_turn(self, user_input: str) -> Tuple[str, str, float, Dict]:
-        """Process a conversation turn with context preservation and routing strategy."""        
-        # Generate context-aware query using ConversationContextManager
-        recent_messages = self.context_manager.get_messages_for_model('both', include_system=False)
-        context_query = self.context_manager.get_conversation_context(recent_messages[-3:]) if recent_messages else user_input
+        """Process a single conversation turn with Agent Framework context awareness."""
+        # Use the optimized async routing function instead of creating new event loops
+        response, source, response_time, metadata = self.route_with_selected_strategy(user_input)
         
-        if context_query != "No previous context available.":
-            full_query = f"{context_query}\n\nCurrent question: {user_input}"
-        else:
-            full_query = user_input
-        
-        # Route using selected strategy
-        response, source, response_time, routing_metadata = self.route_with_selected_strategy(full_query)
-        
-        # Additional metadata
-        metadata = {
-            'context_length': len(self.context_manager.chat_history),
-            'query_length': len(user_input),
-            'context_used': len(self.context_manager.chat_history) > 0,
-            'routing_info': routing_metadata
-        }
-        
-        # Add exchange to context manager using correct parameter name
+        # Add exchange to context manager
         self.context_manager.add_exchange(
             user_message=user_input,
-            ai_response=response,  # Note: this becomes 'response' field in the exchange dict
+            ai_response=response,
             source=source,
             response_time=response_time,
             metadata=metadata
         )
         
+        return response, source, response_time, metadata
+    
+    def _generate_mock_response_with_context(self, user_input: str) -> Tuple[str, str, float, Dict]:
+        """Generate mock response when router is unavailable."""
+        import time
+        response, source = self._generate_contextual_mock_response(user_input)
+        response_time = 0.1
+        metadata = {
+            'context_length': len(self.context_manager.chat_history),
+            'query_length': len(user_input),
+            'context_used': False,
+            'routing_info': {
+                'strategy': 'mock',
+                'target': source,
+                'confidence': 0.5,
+                'reason': 'Router not available',
+                'source': source,
+                'response_time': response_time,
+                'success': True
+            }
+        }
+        self.context_manager.add_exchange(
+            user_message=user_input,
+            ai_response=response,
+            source=source,
+            response_time=response_time,
+            metadata=metadata
+        )
         return response, source, response_time, metadata
     
     def _generate_contextual_mock_response(self, query: str) -> Tuple[str, str]:
