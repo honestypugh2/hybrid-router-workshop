@@ -2,6 +2,8 @@
 
 This directory contains the Azure infrastructure as code (Bicep) templates for deploying the hybrid LLM router workshop resources.
 
+> **⚠️ DISCLAIMER**: This infrastructure code is provided **for development and educational purposes only**. This is not production-ready code and should not be deployed in production environments without proper security review, testing, and hardening. Use at your own risk.
+
 ## ⚙️ Prerequisites
 
 Before deploying, you must configure environment variables for the deployment. Both parameter files now use environment variables instead of hardcoded values.
@@ -113,31 +115,37 @@ The infrastructure includes the following Azure resources:
 - **Modular Design**: Each service is a separate module for easier maintenance
 - **Conditional Deployment**: Feature flags to enable/disable services
 - **Proper Error Handling**: Uses safe navigation operators for nullable module references
-- **Role-Based Access Control**: Automatic role assignments using azure-roles.json for secure service-to-service communication
+- **Role-Based Access Control**: Automatic role assignments defined in main.bicep for secure service-to-service communication
 
 ## 📁 Structure
 
 ```text
 infra/
 ├── main.bicep                   # Main orchestration template
-├── main.bicepparam             # Parameters file for deployment
-├── deploy.ps1                 # PowerShell deployment script
+├── main.bicepparam             # Parameters file for deployment (uses environment variables)
+├── main.bicepparam.sample      # Sample parameters file
+├── main.parameters.json        # Parameters for azd deployment
+├── .env.sample                 # Sample environment variables file
+├── deploy.ps1                  # PowerShell deployment script (Azure CLI)
+├── deploy-azd.ps1             # PowerShell deployment script (azd)
+├── azd-deploy.ps1             # Simplified azd deployment script
+├── setup-azd.ps1              # Initial azd setup and configuration
 ├── README.md                  # This file
 ├── modules/
 │   ├── ai-foundry-project.bicep # Azure AI Foundry Project
-│   ├── apim.bicep              # API Management service
+│   ├── apim.bicep              # API Management service (main)
+│   ├── apim_v1.bicep           # API Management v1 (legacy)
+│   ├── apim_inference.bicep    # API Management with inference backend pool
+│   ├── apim.json               # APIM configuration JSON
 │   ├── app-insights.bicep      # Application Insights
-│   ├── azure-roles.json        # Azure built-in role definitions
+│   ├── deployments.bicep       # Model deployments module
 │   ├── log-analytics.bicep     # Log Analytics workspace
 │   ├── openai.bicep           # Azure OpenAI service with multiple models
 │   ├── role-assignment.bicep  # Role assignment module
-│   ├── utils.py               # Azure utility functions for deployment and cleanup
 │   └── specs/                 # OpenAPI specifications for APIM
 │       ├── azureaifoundry.json      # Azure AI Foundry API specification
 │       ├── azureaifoundryopenai.json # Azure OpenAI API specification
 │       └── passthrough.json         # Passthrough API specification
-└── scripts/
-    └── cleanup_script.py      # Automated resource cleanup script
 ```
 
 ## 📄 OpenAPI Specifications
@@ -414,9 +422,10 @@ After deployment, the following outputs are available:
 - OpenAI service is configured with managed identity support
 - APIM is configured with secure protocols only
 - AI Foundry Project uses system-assigned managed identity
-- **Automatic Role Assignments**: Services are automatically assigned appropriate roles using azure-roles.json:
+- **Automatic Role Assignments**: Services are automatically assigned appropriate roles defined in main.bicep:
   - AI Foundry Project gets `CognitiveServicesOpenAIUser` role on OpenAI service
   - API Management gets `CognitiveServicesOpenAIUser` role on OpenAI service
+  - Role definitions are embedded in the Bicep template (not external JSON file)
 
 ### API Keys and Secrets
 
@@ -498,12 +507,12 @@ azd down --environment prod
 
 #### Option 2: Using the Cleanup Script
 
-The project includes a comprehensive cleanup script that uses the `modules/utils.py` functions to properly clean up Azure resources:
+The project includes a comprehensive cleanup script located in `scripts/cleanup_script.py` that uses utility functions from `modules/utils.py` to properly clean up Azure resources:
 
 1. **Navigate to the project root**:
 
    ```bash
-   cd hybrid-router-workshop
+   cd hybrid-llm-router-workshop
    ```
 
 2. **Activate the Python virtual environment**:
