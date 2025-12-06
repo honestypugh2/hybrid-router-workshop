@@ -28,13 +28,13 @@ if project_root not in sys.path:
 parent_env = os.path.join(project_root, '.env')
 if os.path.exists(parent_env):
     load_dotenv(parent_env, override=True)
-    print(f"✅ Loaded environment from: {parent_env}")
+    print(f"[OK] Loaded environment from: {parent_env}")
 else:
     load_dotenv()
-    print(f"⚠️ Loading .env from current directory")
+    print(f"[WARN] Loading .env from current directory")
 
 # Verify critical environment variables
-print(f"🔍 Environment Check:")
+print(f"[INFO] Environment Check:")
 print(f"   LOCAL_MODEL_ENDPOINT: {os.environ.get('LOCAL_MODEL_ENDPOINT', 'NOT SET')}")
 print(f"   APIM_ENDPOINT: {os.environ.get('APIM_ENDPOINT', 'NOT SET')}")
 print(f"   AZURE_AI_FOUNDRY_PROJECT_ENDPOINT: {os.environ.get('AZURE_AI_FOUNDRY_PROJECT_ENDPOINT', 'NOT SET')}")
@@ -43,10 +43,9 @@ print(f"   BERT_MODEL_FULLPATH: {os.environ.get('BERT_MODEL_FULLPATH', 'NOT SET'
 # Suppress warnings that might clutter the logs
 warnings.filterwarnings('ignore')
 
-# Try to import hybrid router and context manager
+# Try to import hybrid router (HybridAgentContextManager is now part of the router)
 try:
     from modules.hybrid_router_agent_framework import HybridAgentRouter, HybridAgentRouterConfig, create_hybrid_agent_router_from_env
-    from modules.context_manager import ConversationContextManager
     router_available = True
 except ImportError as e:
     router_available = False
@@ -97,94 +96,16 @@ class SystemStatusResponse(BaseModel):
     availableRouters: Dict[str, bool]
     systemHealth: str  # 'healthy' | 'degraded' | 'error'
 
-class ConversationContext:
-    """Enhanced conversation context manager for the API."""
-    
-    def __init__(self, max_exchanges: int = 15):
-        self.max_exchanges = max_exchanges
-        self.sessions: Dict[str, List[Dict]] = {}
-        self.session_stats: Dict[str, Dict] = {}
-    
-    def add_exchange(self, session_id: str, user_msg: str, ai_response: str, source: str, response_time: float, metadata: Optional[Dict] = None):
-        """Add a conversation exchange with context preservation."""
-        if session_id not in self.sessions:
-            self.sessions[session_id] = []
-            self.session_stats[session_id] = {
-                'start_time': datetime.now(),
-                'total_exchanges': 0,
-                'model_switches': 0,
-                'last_model': None,
-                'context_preserved': 0,
-                'fallback_used': 0
-            }
-        
-        exchange = {
-            'timestamp': datetime.now(),
-            'user_message': user_msg,
-            'ai_response': ai_response,
-            'source': source,
-            'response_time': response_time,
-            'exchange_number': len(self.sessions[session_id]) + 1,
-            'metadata': metadata or {}
-        }
-        
-        # Update session stats
-        stats = self.session_stats[session_id]
-        stats['total_exchanges'] += 1
-        
-        # Track model switches
-        if stats['last_model'] and stats['last_model'] != source:
-            stats['model_switches'] += 1
-            exchange['model_switched'] = True
-        else:
-            exchange['model_switched'] = False
-        
-        stats['last_model'] = source
-        
-        # Add to history
-        self.sessions[session_id].append(exchange)
-        
-        # Maintain max history length
-        if len(self.sessions[session_id]) > self.max_exchanges:
-            self.sessions[session_id].pop(0)
-    
-    def get_context_for_query(self, session_id: str, current_query: str) -> str:
-        """Generate context-aware query with conversation history."""
-        if session_id not in self.sessions or len(self.sessions[session_id]) == 0:
-            return current_query
-        
-        # Build context summary
-        recent_exchanges = self.sessions[session_id][-3:]  # Last 3 exchanges
-        context_summary = []
-        
-        for ex in recent_exchanges:
-            context_summary.append(f"User: {ex['user_message'][:50]}...")
-            context_summary.append(f"AI: {ex['ai_response'][:50]}...")
-        
-        context_info = " | ".join(context_summary)
-        return f"{current_query} [Context: {len(self.sessions[session_id])} exchanges: {context_info}]"
-    
-    def get_formatted_history(self, session_id: str) -> List[Dict]:
-        """Get conversation history in OpenAI format."""
-        if session_id not in self.sessions:
-            return []
-        
-        messages = []
-        for exchange in self.sessions[session_id][-10:]:  # Last 10 exchanges
-            messages.append({"role": "user", "content": exchange['user_message']})
-            messages.append({"role": "assistant", "content": exchange['ai_response']})
-        return messages
-
 class EnhancedHybridRouterAPI:
     """Enhanced hybrid router API that mirrors streamlit_multiturn_demo.py functionality."""
     
     def __init__(self):
         self.router = None
-        self.context = ConversationContext()
         self.routing_stats = {"local": 0, "apim": 0, "foundry": 0, "azure": 0, "mock": 0, "error": 0}
         self.performance_history = []
         self.available_routers = {'hybrid': True, 'rule_based': False, 'bert': False, 'phi': False}
         self.selected_strategy = 'hybrid'
+        # Routers have their own context managers - we'll access via router.context_manager
         self.init_router()
         self.init_additional_routers()
     
@@ -287,8 +208,8 @@ class EnhancedHybridRouterAPI:
             return mock_response, source, response_time, metadata
         
         try:
-            # Use Agent Framework async routing with context
-            has_context = session_id in self.context.sessions and len(self.context.sessions[session_id]) > 0
+            # Use Agent Framework async routing with context (router manages its own context)
+            has_context = len(self.router.context_manager.routing_metadata) > 0
             
             # Route using Agent Framework (async) - properly await the result
             result = await self.router.route_async(
@@ -380,25 +301,16 @@ class EnhancedHybridRouterAPI:
         
         # Check for context-dependent queries
         is_followup = any(word in query_lower for word in ["what about", "and", "also", "furthermore", "additionally", "can you", "elaborate", "explain more"])
-        has_context = session_id in self.context.sessions and len(self.context.sessions[session_id]) > 0
+        has_context = False  # No context available without router
         
         if is_followup and has_context:
-            last_exchange = self.context.sessions[session_id][-1]
-            last_source = last_exchange['source']
-            
-            responses = [
-                f"Following up on our previous discussion about '{last_exchange['user_message'][:30]}...', let me elaborate: {query[:50]}",
-                f"Based on our conversation context, I can expand on that topic: {query[:50]}",
-                f"Continuing from my previous {last_source} response, here's more detail: {query[:50]}"
-            ]
-            return random.choice(responses), last_source
+            # Context not available in mock mode
+            response = f"Mock response (no context available): {query[:50]}..."
+            return response, "mock"
         
         # Standard routing logic with context awareness
         if any(word in query_lower for word in ["hello", "hi", "start", "begin"]):
-            if has_context:
-                responses = ["Welcome back! I remember our previous conversation.", "Hello again! Ready to continue our discussion?"]
-            else:
-                responses = ["Hello! I'm ready to start our conversation.", "Hi there! Let's begin our chat."]
+            responses = ["Hello! I'm ready to start our conversation.", "Hi there! Let's begin our chat."]
             source = "local"
         elif any(word in query_lower for word in ["enterprise", "business", "production", "scalable"]):
             responses = [
@@ -464,10 +376,8 @@ async def route_query(request: QueryRequest):
             request.query, request.strategy, session_id
         )
         
-        # Add to context
-        api_instance.context.add_exchange(
-            session_id, request.query, response, source, response_time, metadata
-        )
+        # Context is managed by the router's HybridAgentContextManager automatically
+        # No need to manually add exchanges - the router.route_async() does this
         
         # Update routing stats
         if source in api_instance.routing_stats:
@@ -543,19 +453,10 @@ async def api_get_capabilities():
 async def api_clear_context(session_id: str):
     """Clear conversation context for a session (React /api/* pattern)."""
     try:
-        if session_id in api_instance.context.sessions:
-            api_instance.context.sessions[session_id] = []
-            api_instance.context.session_stats[session_id] = {
-                'start_time': datetime.now(),
-                'total_exchanges': 0,
-                'model_switches': 0,
-                'last_model': None,
-                'context_preserved': 0,
-                'fallback_used': 0
-            }
+        if api_instance.router and api_instance.router.context_manager:
+            api_instance.router.context_manager.clear_conversation()
             return {"status": "success", "message": f"Context cleared for session {session_id}"}
-        else:
-            return {"status": "success", "message": "No context found for session"}
+        return {"status": "info", "message": "No router context available"}
     except Exception as e:
         logger.error(f"Error clearing context: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -564,40 +465,38 @@ async def api_clear_context(session_id: str):
 async def api_get_conversation_history(session_id: str):
     """Get conversation history for a session (React /api/* pattern)."""
     try:
-        history = api_instance.context.get_formatted_history(session_id)
-        return {
-            "sessionId": session_id,
-            "history": history,
-            "exchangeCount": len(history) // 2 if history else 0
-        }
+        if api_instance.router and api_instance.router.context_manager:
+            # Get full conversation messages using the dedicated method
+            messages = api_instance.router.context_manager.get_conversation_messages(count=50)
+            summary = api_instance.router.context_manager.get_routing_summary()
+            
+            return {
+                "session_id": session_id,
+                "exchanges": messages,
+                "stats": summary
+            }
+        return {"session_id": session_id, "exchanges": [], "stats": {}}
     except Exception as e:
         logger.error(f"Error getting conversation history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/conversation-insights/{session_id}")
 async def api_get_conversation_insights(session_id: str):
-    """Get conversation insights and statistics (React /api/* pattern)."""
+    """Get conversation insights and analytics (React /api/* pattern)."""
     try:
-        if session_id not in api_instance.context.session_stats:
-            return {
-                "sessionId": session_id,
-                "insights": {
-                    "totalExchanges": 0,
-                    "modelSwitches": 0,
-                    "contextPreserved": 0,
-                    "fallbackUsed": 0
-                }
-            }
+        if not api_instance.router or not api_instance.router.context_manager:
+            return {"session_id": session_id, "insights": {}, "message": "No router available"}
         
-        stats = api_instance.context.session_stats[session_id]
+        summary = api_instance.router.context_manager.get_routing_summary()
+        
         return {
-            "sessionId": session_id,
+            "session_id": session_id,
             "insights": {
-                "totalExchanges": stats.get('total_exchanges', 0),
-                "modelSwitches": stats.get('model_switches', 0),
-                "contextPreserved": stats.get('context_preserved', 0),
-                "fallbackUsed": stats.get('fallback_used', 0),
-                "sessionDuration": (datetime.now() - stats['start_time']).total_seconds() if 'start_time' in stats else 0
+                "total_exchanges": summary.get('total_exchanges', 0),
+                "model_switches": summary.get('model_switches', 0),
+                "routing_distribution": summary.get('routing_distribution', {}),
+                "performance_metrics": summary.get('performance_metrics', {}),
+                "has_agent_thread": summary.get('has_agent_thread', False)
             }
         }
     except Exception as e:

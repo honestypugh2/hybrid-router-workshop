@@ -435,22 +435,24 @@ class HybridAgentRouter:
         if not self.config.agent_project_endpoint:
             return "Agent project endpoint not configured", 0, False
         
+        credential = None
+        agent_client = None
+        
         try:
             start_time = time.time()
             
             agent_instructions = instructions or self.config.agent_default_instructions
             
-            async with (
-                DefaultAzureCredential() as credential,
-                AzureAIAgentClient(
-                    project_endpoint=self.config.agent_project_endpoint,
-                    model_deployment_name=self.config.agent_model_deployment,
-                    async_credential=credential,
-                    agent_name="HybridRouterAgent"
-                ).create_agent(
-                    instructions=agent_instructions
-                ) as agent,
-            ):
+            # Create resources with proper cleanup
+            credential = DefaultAzureCredential()
+            agent_client = AzureAIAgentClient(
+                project_endpoint=self.config.agent_project_endpoint,
+                model_deployment_name=self.config.agent_model_deployment,
+                async_credential=credential,
+                agent_name="HybridRouterAgent"
+            )
+            
+            async with agent_client.create_agent(instructions=agent_instructions) as agent:
                 result = await agent.run(prompt)
                 response_time = time.time() - start_time
                 return result.text, response_time, True
@@ -466,16 +468,41 @@ class HybridAgentRouter:
                 print("💡 Check agent_project_endpoint configuration")
             
             return f"Agent Framework error: {error_msg}", 0, False
+        
+        finally:
+            # Ensure proper cleanup
+            try:
+                if agent_client:
+                    await agent_client.close()
+                if credential:
+                    await credential.close()
+            except Exception as cleanup_error:
+                print(f"⚠️ Cleanup warning: {cleanup_error}")
     
     def query_agent_framework(self, prompt: str, instructions: str = None) -> Tuple[str, float, bool]:
         """Query using Agent Framework (sync wrapper)."""
+        import nest_asyncio
+        
+        # Apply nest_asyncio to handle nested event loops
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If we're already in an event loop, create a new one
-                import nest_asyncio
-                nest_asyncio.apply()
+            nest_asyncio.apply()
+        except:
+            pass
+        
+        try:
+            # Get or create event loop safely
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_closed():
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            # Run async function
             return loop.run_until_complete(self.query_agent_framework_async(prompt, instructions))
+            
         except Exception as e:
             # Fallback: create new event loop
             try:
@@ -711,14 +738,15 @@ class HybridAgentRouter:
         }
         
         # Add exchange to conversation context using HybridAgentContextManager
-        if use_context:
-            self.context_manager.add_exchange_generic(
-                prompt=query,
-                response=clean_response,
-                source=actual_source,
-                response_time=total_time,
-                metadata=metadata
-            )
+        # ALWAYS save to history, regardless of use_context flag
+        # use_context only controls whether we READ context, not whether we WRITE it
+        self.context_manager.add_exchange_generic(
+            prompt=query,
+            response=clean_response,
+            source=actual_source,
+            response_time=total_time,
+            metadata=metadata
+        )
         
         # Record for statistics
         self.routing_history.append({

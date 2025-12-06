@@ -407,9 +407,31 @@ class HybridAgentContextManager:
             count: Number of recent exchanges to return
             
         Returns:
-            List of exchange dictionaries
+            List of exchange dictionaries with full message content
         """
         return self.routing_metadata[-count:] if len(self.routing_metadata) > 0 else []
+    
+    def get_conversation_messages(self, count: int = 10) -> List[Dict[str, str]]:
+        """
+        Get recent conversation in simple message format for display.
+        
+        Args:
+            count: Number of recent message pairs to return
+            
+        Returns:
+            List of dictionaries with 'user' and 'assistant' keys
+        """
+        exchanges = self.get_recent_exchanges(count)
+        messages = []
+        for exchange in exchanges:
+            messages.append({
+                'user': exchange.get('user_message', ''),
+                'assistant': exchange.get('response', ''),
+                'source': exchange.get('source', 'unknown'),
+                'timestamp': exchange.get('timestamp', ''),
+                'response_time': exchange.get('response_time', 0.0)
+            })
+        return messages
     
     def get_session_summary(self) -> Dict[str, Any]:
         """
