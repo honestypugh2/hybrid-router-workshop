@@ -5,9 +5,14 @@ azure-ai-inference>=1.0.0b1
 azure-core>=1.29.0
 python-dotenv>=1.0.0
 
-# Azure AI Services
-azure-ai-projects>=1.0.0b1
-azure-ai-agents>=1.0.0b1
+# Azure AI Agent Framework (Preview Versions)
+azure-ai-projects>=2.0.0b2  # --pre flag required for preview
+azure-ai-agents>=1.2.0b5
+agent-framework>=0.1.0
+agent-framework-azure-ai>=1.0.0b251120
+
+# Foundry Local SDK
+foundry-local-sdk>=0.5.0
 
 # FastAPI Backend
 fastapi>=0.104.0
@@ -28,14 +33,15 @@ peft>=0.6.0
 trl>=0.7.0
 bitsandbytes>=0.41.0
 
+# ONNX Runtime and Optimization Tools
+onnx>=1.15.0
+onnxruntime>=1.16.0
+onnxruntime-tools>=1.7.0
+
 # Telemetry and Monitoring
 azure-monitor-opentelemetry>=1.2.0
 opentelemetry-api>=1.20.0
 opentelemetry-sdk>=1.20.0
-
-# Frontend
-streamlit>=1.28.0
-plotly>=5.17.0
 
 # Utilities
 requests>=2.31.0
@@ -54,6 +60,10 @@ flake8>=6.0.0
 ruff>=0.13.3
 
 # Custom Dependencies Note
-# foundry_local - This appears to be a custom module for local model management
+# Installation Instructions:
+# - For preview packages: pip install azure-ai-projects --pre
+# - For Foundry Local SDK: pip install foundry-local-sdk
+# 
+# foundry-local-sdk - SDK for local model management with Microsoft Foundry
 # If you encounter "ModuleNotFoundError: No module named 'foundry_local'", 
-# this module may need to be installed separately or is part of a private package
+# ensure foundry-local-sdk is installed via pip install foundry-local-sdk
